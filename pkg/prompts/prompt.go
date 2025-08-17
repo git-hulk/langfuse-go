@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/git-hulk/langfuse-go/pkg/common"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/git-hulk/langfuse-go/pkg/common"
 
 	"github.com/go-resty/resty/v2"
 )
