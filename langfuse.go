@@ -1,9 +1,9 @@
 package langfuse
 
 import (
-	"github.com/git-hulk/langfuse-go/prompts"
-	"github.com/git-hulk/langfuse-go/traces"
-	
+	"github.com/git-hulk/langfuse-go/pkg/prompts"
+	"github.com/git-hulk/langfuse-go/pkg/traces"
+
 	"github.com/go-resty/resty/v2"
 )
 

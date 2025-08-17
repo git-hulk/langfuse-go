@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/git-hulk/langfuse-go/batch"
+	"github.com/git-hulk/langfuse-go/pkg/batch"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofrs/uuid/v5"
