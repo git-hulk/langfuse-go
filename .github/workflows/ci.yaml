@@ -1,0 +1,46 @@
+
+name: CI Actions
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  workflow:
+    name: Lint/Test
+
+    strategy:
+      matrix:
+        go-version: [1.22.x]
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{matrix.go-version}}
+
+      - name: Checkout Code Base
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+
+      - name: Restore Go Module Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/go/internal/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6.5.1
+        with:
+          version: v1.64.7
+          verify: false
+
+      - name: Test
+        run: make test

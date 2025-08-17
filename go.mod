@@ -1,6 +1,6 @@
 module github.com/git-hulk/langfuse-go
 
-go 1.24.5
+go 1.22
 
 require (
 	github.com/go-resty/resty/v2 v2.16.5
