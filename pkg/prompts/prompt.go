@@ -103,7 +103,7 @@ type GetParams struct {
 	Version int
 }
 
-type ListResponse struct {
+type ListPrompts struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     struct {
 		Prompts []PromptEntry `json:"prompts"`
@@ -145,8 +145,8 @@ func (c *Client) Get(params GetParams) (*PromptEntry, error) {
 }
 
 // List retrieves a list of prompts based on the provided parameters.
-func (c Client) List(ctx context.Context, params ListParams) (*ListResponse, error) {
-	var listResponse ListResponse
+func (c Client) List(ctx context.Context, params ListParams) (*ListPrompts, error) {
+	var listResponse ListPrompts
 	rsp, err := c.restyCli.R().
 		SetContext(ctx).
 		SetResult(&listResponse).
