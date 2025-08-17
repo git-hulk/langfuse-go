@@ -1,4 +1,4 @@
-package trace
+package traces
 
 import (
 	"testing"
@@ -12,8 +12,8 @@ import (
 func TestTrace_End_CalculatesLatency(t *testing.T) {
 	startTime := time.Now().Add(-100 * time.Millisecond)
 	trace := &Trace{
-		ID:        "test-trace-id",
-		Name:      "test-trace",
+		ID:        "test-traces-id",
+		Name:      "test-traces",
 		Timestamp: startTime,
 	}
 
@@ -26,8 +26,8 @@ func TestTrace_End_CalculatesLatency(t *testing.T) {
 
 func TestTrace_StartSpan(t *testing.T) {
 	trace := &Trace{
-		ID:           "test-trace-id",
-		Name:         "test-trace",
+		ID:           "test-traces-id",
+		Name:         "test-traces",
 		observations: []*Observation{},
 	}
 
@@ -36,8 +36,8 @@ func TestTrace_StartSpan(t *testing.T) {
 	require.NotNil(t, span)
 	assert.Equal(t, "test-span", span.Name)
 	assert.Equal(t, ObservationTypeSpan, span.Type)
-	assert.Equal(t, "test-trace-id", span.TraceID)
-	assert.Equal(t, "test-trace-id", span.ParentObservationID)
+	assert.Equal(t, "test-traces-id", span.TraceID)
+	assert.Equal(t, "test-traces-id", span.ParentObservationID)
 	assert.NotEmpty(t, span.ID)
 	assert.False(t, span.StartTime.IsZero())
 
@@ -50,8 +50,8 @@ func TestTrace_StartSpan(t *testing.T) {
 
 func TestTrace_MultipleSpans(t *testing.T) {
 	trace := &Trace{
-		ID:           "test-trace-id",
-		Name:         "test-trace",
+		ID:           "test-traces-id",
+		Name:         "test-traces",
 		observations: []*Observation{},
 	}
 

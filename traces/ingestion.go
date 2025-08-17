@@ -1,4 +1,4 @@
-package trace
+package traces
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	IngestionCreateTrace = "trace-create"
+	IngestionCreateTrace = "traces-create"
 	IngestionCreateSpan  = "span-create"
 )
 

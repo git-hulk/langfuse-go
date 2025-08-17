@@ -1,4 +1,4 @@
-package trace
+package traces
 
 import (
 	"testing"
@@ -31,7 +31,7 @@ func TestObservation_Fields(t *testing.T) {
 
 	observation := &Observation{
 		ID:                  "obs-123",
-		TraceID:             "trace-456",
+		TraceID:             "traces-456",
 		Type:                ObservationTypeGeneration,
 		Name:                "test-generation",
 		Model:               "gpt-4",
@@ -48,7 +48,7 @@ func TestObservation_Fields(t *testing.T) {
 	}
 
 	assert.Equal(t, "obs-123", observation.ID)
-	assert.Equal(t, "trace-456", observation.TraceID)
+	assert.Equal(t, "traces-456", observation.TraceID)
 	assert.Equal(t, ObservationTypeGeneration, observation.Type)
 	assert.Equal(t, "test-generation", observation.Name)
 	assert.Equal(t, "gpt-4", observation.Model)
