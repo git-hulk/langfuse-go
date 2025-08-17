@@ -31,10 +31,10 @@ func (c *ChatMessageWithPlaceHolder) validate() error {
 	return nil
 }
 
-// Prompt represents a Langfuse prompt with its configuration and messages.
-type Prompt struct {
+// PromptEntry represents a Langfuse prompt with its configuration and messages.
+type PromptEntry struct {
 	Name    string                       `json:"name"`
-	Prompt  []ChatMessageWithPlaceHolder `json:"prompts"`
+	Prompt  []ChatMessageWithPlaceHolder `json:"prompt"`
 	Type    string                       `json:"type"`
 	Version int                          `json:"version,omitempty"`
 	Tags    []string                     `json:"tags,omitempty"`
@@ -42,7 +42,7 @@ type Prompt struct {
 	Config  any                          `json:"config,omitempty"`
 }
 
-func (p *Prompt) validate() error {
+func (p *PromptEntry) validate() error {
 	if p.Name == "" {
 		return errors.New("'name' is required")
 	}
@@ -106,7 +106,7 @@ type GetParams struct {
 type ListResponse struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     struct {
-		Prompts []Prompt `json:"prompts"`
+		Prompts []PromptEntry `json:"prompts"`
 	} `json:"data"`
 }
 
@@ -119,12 +119,12 @@ func NewClient(cli *resty.Client) *Client {
 }
 
 // Get retrieves a specific prompt by name, version, and label.
-func (c *Client) Get(params GetParams) (*Prompt, error) {
+func (c *Client) Get(params GetParams) (*PromptEntry, error) {
 	if params.Name == "" {
 		return nil, errors.New("'name' is required")
 	}
 
-	var prompt Prompt
+	var prompt PromptEntry
 	req := c.restyCli.R().SetResult(&prompt)
 	if params.Version > 0 {
 		req.SetQueryParam("version", strconv.Itoa(params.Version))
@@ -163,11 +163,15 @@ func (c Client) List(ctx context.Context, params ListParams) (*ListResponse, err
 }
 
 // Create creates a new prompt.
-func (c *Client) Create(ctx context.Context, createPrompt *Prompt) (*Prompt, error) {
+func (c *Client) Create(ctx context.Context, createPrompt *PromptEntry) (*PromptEntry, error) {
+	if err := createPrompt.validate(); err != nil {
+		return nil, err
+	}
+
 	// For reset the prompt version because it's not supported in the creating API.
 	createPrompt.Version = 0
 
-	var createdPrompt Prompt
+	var createdPrompt PromptEntry
 	rsp, err := c.restyCli.R().
 		SetContext(ctx).
 		SetBody(createPrompt).

@@ -34,7 +34,7 @@ func TestPromptClient_Get(t *testing.T) {
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			require.Equal(t, "/v2/prompts/test-prompt", r.URL.Path)
-			prompt := Prompt{Name: "test-prompt"}
+			prompt := PromptEntry{Name: "test-prompt"}
 			w.Header().Set("Content-Type", "application/json")
 			err := json.NewEncoder(w).Encode(prompt)
 			require.NoError(t, err)
@@ -75,7 +75,7 @@ func TestPromptClient_Create(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			require.Equal(t, "/v2/prompts", r.URL.Path)
-			var prompt Prompt
+			var prompt PromptEntry
 			err := json.NewDecoder(r.Body).Decode(&prompt)
 			require.NoError(t, err)
 			w.Header().Set("Content-Type", "application/json")
@@ -86,7 +86,7 @@ func TestPromptClient_Create(t *testing.T) {
 
 	cli := resty.New().SetBaseURL(server.URL)
 	client := NewClient(cli)
-	createPrompt := &Prompt{Name: "test-prompt", Prompt: []ChatMessageWithPlaceHolder{{Role: "user", Content: "hello"}}}
+	createPrompt := &PromptEntry{Name: "test-prompt", Prompt: []ChatMessageWithPlaceHolder{{Role: "user", Content: "hello"}}}
 	prompt, err := client.Create(context.Background(), createPrompt)
 	require.NoError(t, err)
 	require.Equal(t, "test-prompt", prompt.Name)
