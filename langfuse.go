@@ -3,6 +3,7 @@ package langfuse
 import (
 	"github.com/git-hulk/langfuse-go/pkg/comments"
 	"github.com/git-hulk/langfuse-go/pkg/datasets"
+	"github.com/git-hulk/langfuse-go/pkg/llmconnections"
 	"github.com/git-hulk/langfuse-go/pkg/models"
 	"github.com/git-hulk/langfuse-go/pkg/projects"
 	"github.com/git-hulk/langfuse-go/pkg/prompts"
@@ -14,15 +15,16 @@ import (
 )
 
 type LangFuse struct {
-	ingestor *traces.Ingestor
-	prompt   *prompts.Client
-	model    *models.Client
-	project  *projects.Client
-	comment  *comments.Client
-	dataset  *datasets.Client
-	session  *sessions.Client
-	score    *scores.Client
-	restyCli *resty.Client
+	ingestor      *traces.Ingestor
+	prompt        *prompts.Client
+	model         *models.Client
+	project       *projects.Client
+	comment       *comments.Client
+	dataset       *datasets.Client
+	session       *sessions.Client
+	score         *scores.Client
+	llmConnection *llmconnections.Client
+	restyCli      *resty.Client
 }
 
 func NewClient(host string, publicKey string, secretKey string) *LangFuse {
@@ -31,15 +33,16 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 		SetBasicAuth(publicKey, secretKey)
 
 	return &LangFuse{
-		ingestor: traces.NewIngestor(restyCli),
-		prompt:   prompts.NewClient(restyCli),
-		model:    models.NewClient(restyCli),
-		project:  projects.NewClient(restyCli),
-		comment:  comments.NewClient(restyCli),
-		dataset:  datasets.NewClient(restyCli),
-		session:  sessions.NewClient(restyCli),
-		score:    scores.NewClient(restyCli),
-		restyCli: restyCli,
+		ingestor:      traces.NewIngestor(restyCli),
+		prompt:        prompts.NewClient(restyCli),
+		model:         models.NewClient(restyCli),
+		project:       projects.NewClient(restyCli),
+		comment:       comments.NewClient(restyCli),
+		dataset:       datasets.NewClient(restyCli),
+		session:       sessions.NewClient(restyCli),
+		score:         scores.NewClient(restyCli),
+		llmConnection: llmconnections.NewClient(restyCli),
+		restyCli:      restyCli,
 	}
 }
 
@@ -73,6 +76,10 @@ func (c *LangFuse) Sessions() *sessions.Client {
 
 func (c *LangFuse) Scores() *scores.Client {
 	return c.score
+}
+
+func (c *LangFuse) LLMConnections() *llmconnections.Client {
+	return c.llmConnection
 }
 
 func (c *LangFuse) Close() error {
