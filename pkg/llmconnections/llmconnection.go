@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/git-hulk/langfuse-go/pkg/common"
 	"github.com/hashicorp/go-set/v3"
+
+	"github.com/git-hulk/langfuse-go/pkg/common"
 
 	"github.com/go-resty/resty/v2"
 )

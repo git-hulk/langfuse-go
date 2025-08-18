@@ -4,6 +4,9 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid/v5"
+	"go.uber.org/zap"
+
+	"github.com/git-hulk/langfuse-go/pkg/logger"
 )
 
 type TraceEntry struct {
@@ -33,7 +36,10 @@ type Trace struct {
 func (t *Trace) End() {
 	t.Latency = time.Since(t.Timestamp).Milliseconds()
 	if err := t.ingestor.processor.Submit(t); err != nil {
-		// TODO: handle error, e.g., log it
+		logger.Get().With(
+			zap.Error(err),
+			zap.String("trace_name", t.Name),
+		).Error("Failed to submit trace for processing")
 	}
 }
 

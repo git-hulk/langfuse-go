@@ -43,7 +43,7 @@ func TestPromptClient_Get(t *testing.T) {
 
 	cli := resty.New().SetBaseURL(server.URL)
 	client := NewClient(cli)
-	prompt, err := client.Get(GetParams{Name: "test-prompt"})
+	prompt, err := client.Get(context.Background(), GetParams{Name: "test-prompt"})
 	require.NoError(t, err)
 	require.Equal(t, "test-prompt", prompt.Name)
 }

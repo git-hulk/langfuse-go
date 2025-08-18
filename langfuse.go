@@ -1,6 +1,8 @@
 package langfuse
 
 import (
+	"github.com/go-resty/resty/v2"
+
 	"github.com/git-hulk/langfuse-go/pkg/comments"
 	"github.com/git-hulk/langfuse-go/pkg/datasets"
 	"github.com/git-hulk/langfuse-go/pkg/llmconnections"
@@ -10,8 +12,6 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/scores"
 	"github.com/git-hulk/langfuse-go/pkg/sessions"
 	"github.com/git-hulk/langfuse-go/pkg/traces"
-
-	"github.com/go-resty/resty/v2"
 )
 
 type LangFuse struct {

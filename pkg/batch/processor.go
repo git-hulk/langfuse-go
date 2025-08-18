@@ -6,6 +6,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/git-hulk/langfuse-go/pkg/logger"
 )
 
 var (
@@ -241,6 +245,6 @@ func (p *Processor[T]) sendBatch(ctx context.Context, records []T) {
 		return
 	}
 	if err := p.sender.Send(ctx, records); err != nil {
-		// TODO(@git-hulk): log error here
+		logger.Get().Error("Failed to send batch", zap.Error(err))
 	}
 }
