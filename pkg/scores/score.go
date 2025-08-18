@@ -51,8 +51,8 @@ type Score struct {
 	Comment       string             `json:"comment,omitempty"`
 	AuthorUserID  string             `json:"authorUserId,omitempty"`
 	QueueID       string             `json:"queueId,omitempty"`
-	Metadata      interface{}        `json:"metadata,omitempty"`
-	Trace         *traces.TraceEntry `json:"trace,omitempty"`
+	Metadata      interface{}       `json:"metadata,omitempty"`
+	Trace         traces.TraceEntry `json:"trace,omitempty"`
 }
 
 // CreateScoreRequest represents the request body for creating a score.
