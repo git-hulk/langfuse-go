@@ -4,72 +4,105 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is the **langfuse-go** client library for interacting with the Langfuse platform. It provides Go bindings for tracing, prompt management, model management, and comments functionality.
+This is the **langfuse-go** client library for interacting with the Langfuse platform. It provides Go bindings for tracing, prompt management, model management, scores, datasets, sessions, LLM connections, organizations, and annotations functionality.
 
 ## Key Architecture
 
-The codebase follows a modular structure:
+The codebase follows a modular structure with clear separation of concerns:
 
 - **Main Client (`langfuse.go`)**: Entry point that orchestrates all functionality via composition
-- **Package-based modules**: Each feature (traces, prompts, models, comments) is in its own package under `pkg/`
-- **Batch Processing**: Generic batch processor (`pkg/batch/`) handles efficient data ingestion
-- **HTTP Client**: Uses `go-resty/resty` for all API communication with basic auth
+- **Package-based modules**: Each feature area is in its own package under `pkg/` with consistent patterns
+- **Generic Batch Processing**: `pkg/batch/` provides a type-safe generic batch processor for efficient API ingestion
+- **HTTP Client**: Uses `go-resty/resty` with `/api/public` base URL and basic auth configured once
+- **Shared Components**: `pkg/common/` contains shared HTTP utilities and model units
 
 ### Core Components
 
-1. **LangFuse Client**: Main struct that composes all feature clients
-2. **Traces**: Hierarchical tracing with traces containing observations (spans)
-3. **Batch Processor**: Generic buffering system for efficient API calls
-4. **Feature Clients**: Independent clients for prompts, models, and comments
+1. **LangFuse Client**: Main struct that composes all feature clients, initialized with host + credentials
+2. **Traces & Observations**: Hierarchical tracing system with traces containing observations (spans), using batch ingestion
+3. **Generic Batch Processor**: Type-safe buffering system with configurable batch sizes, flush intervals, and worker pools
+4. **Feature Clients**: Independent clients for each API area (prompts, models, scores, etc.) sharing HTTP configuration
+5. **Annotations System**: Queue-based annotation workflows with items and assignments
+
+### Client Architecture Pattern
+
+All feature clients follow the same pattern:
+- Accept a configured `*resty.Client` in constructor
+- Provide CRUD operations with context support
+- Use consistent naming: `Get()`, `List()`, `Create()`, `Delete()`
+- Return structured responses with proper error handling
+- Use validation on request structs
+
+### Batch Processing Architecture
+
+The traces system uses a sophisticated generic batch processor (`pkg/batch/Processor[T]`) that:
+- Buffers incoming records in a channel-based queue
+- Batches records by size (default 32) or time interval (default 3s)
+- Uses configurable worker goroutines for parallel processing
+- Provides graceful shutdown with timeout handling
+- Supports any type implementing the `Sender[T]` interface
 
 ## Development Commands
 
 ### Testing
 ```bash
-make test          # Run all tests with race detector
-go test ./...      # Standard Go test runner
-go test -race ./...  # With race detector manually
+make test                    # Run all tests with race detector (-race -count=1)
+go test ./...               # Standard Go test runner  
+go test ./pkg/annotations/  # Test specific package
+go test -v ./pkg/traces/    # Verbose output for specific package
 ```
 
 ### Code Formatting
 ```bash
-make format        # Format code with goimports and gofmt
+make format                 # Format with goimports + gofmt (includes local import ordering)
+goimports -w -local github.com/git-hulk/langfuse-go ./...
 ```
 
-### Build
+### Build & Linting
 ```bash
-go build ./...     # Build all packages
+go build ./...              # Build all packages
+golangci-lint run           # Lint (CI uses v1.64.7)
 ```
 
-### Linting
-The CI uses `golangci-lint` v1.64.7. Install and run locally:
-```bash
-golangci-lint run
-```
+## API Naming Conventions
 
-## Test Structure
+### Parameter and Path Naming
+- Use proper Go casing for struct fields: `QueueID`, `ItemID`, `ConfigID`
+- Keep JSON tags in camelCase for API compatibility: `json:"queueId"`, `json:"itemId"`
+- Use proper casing in path parameters: `SetPathParam("queueID", ...)` and `{queueID}` in URLs
+- Error messages should use proper casing: `"'queueID' is required"`
 
-- Tests are co-located with source files using `_test.go` suffix
-- Uses `testify` for assertions (`github.com/stretchr/testify`)
-- All new functionality requires unit tests
-
-## Dependencies
-
-- **HTTP Client**: `github.com/go-resty/resty/v2` for API communication
-- **UUID Generation**: `github.com/gofrs/uuid/v5`
-- **Collections**: `github.com/hashicorp/go-set/v3`
-- **Testing**: `github.com/stretchr/testify`
+### URL Structure
+- API paths omit `/api/public` prefix (set in client base URL)
+- Use pattern: `/resource-name/{resourceID}/sub-resource/{subResourceID}`
+- Example: `/annotation-queues/{queueID}/items/{itemID}`
 
 ## Code Patterns
 
 ### Client Initialization
-All feature clients are initialized through the main `LangFuse` struct with shared HTTP client configuration.
+```go
+// Main client sets base URL and auth once
+restyCli := resty.New().
+    SetBaseURL(host+"/api/public").
+    SetBasicAuth(publicKey, secretKey)
 
-### Batch Processing
-The traces functionality uses a generic batch processor that buffers records and sends them in configurable batches with flush intervals.
+// Feature clients reuse the configured HTTP client
+client := features.NewClient(restyCli)
+```
 
-### Error Handling
-Standard Go error handling patterns. API errors are wrapped and returned up the call stack.
+### Error Handling & Validation
+- All request structs implement `validate() error` methods
+- Use proper Go error wrapping: `fmt.Errorf("failed to X: %w", err)`
+- Check required fields and return descriptive errors
+- HTTP errors include status codes and response bodies
 
-### Struct Composition
-The main client uses composition rather than inheritance, with each feature area having its own client struct.
+### Testing Patterns
+- Use `github.com/stretchr/testify` for assertions (`require`, `assert`)
+- Table-driven tests with `name`, `input`, `expected`, `wantErr` fields
+- Use `httptest.NewServer()` for HTTP client testing
+- Test both success and error cases including validation failures
+
+### JSON Struct Tags
+- Use `omitempty` for optional fields: `json:"field,omitempty"`
+- Match API field naming exactly in JSON tags
+- Use pointer types for truly optional fields that can be nil
