@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/require"
@@ -13,44 +14,46 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/common"
 )
 
-func TestCreateDatasetItemRequest_validate(t *testing.T) {
+// Tests for V2 Datasets API
+
+func TestCreateDatasetRequest_validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request CreateDatasetItemRequest
+		request CreateDatasetRequest
 		wantErr bool
+		errMsg  string
 	}{
 		{
-			name: "valid request",
-			request: CreateDatasetItemRequest{
-				DatasetName:    "test-dataset",
-				Input:          map[string]interface{}{"text": "hello world"},
-				ExpectedOutput: map[string]interface{}{"response": "hello back"},
+			name: "valid request with all fields",
+			request: CreateDatasetRequest{
+				Name:        "test-dataset",
+				Description: "A test dataset",
+				Metadata:    map[string]interface{}{"version": "1.0"},
 			},
 			wantErr: false,
 		},
 		{
-			name: "missing dataset name",
-			request: CreateDatasetItemRequest{
-				Input:          map[string]interface{}{"text": "hello world"},
-				ExpectedOutput: map[string]interface{}{"response": "hello back"},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty dataset name",
-			request: CreateDatasetItemRequest{
-				DatasetName:    "",
-				Input:          map[string]interface{}{"text": "hello world"},
-				ExpectedOutput: map[string]interface{}{"response": "hello back"},
-			},
-			wantErr: true,
-		},
-		{
-			name: "dataset name only",
-			request: CreateDatasetItemRequest{
-				DatasetName: "test-dataset",
+			name: "valid request with name only",
+			request: CreateDatasetRequest{
+				Name: "minimal-dataset",
 			},
 			wantErr: false,
+		},
+		{
+			name: "missing name",
+			request: CreateDatasetRequest{
+				Description: "Dataset without name",
+			},
+			wantErr: true,
+			errMsg:  "'name' is required",
+		},
+		{
+			name: "empty name",
+			request: CreateDatasetRequest{
+				Name: "",
+			},
+			wantErr: true,
+			errMsg:  "'name' is required",
 		},
 	}
 
@@ -59,6 +62,7 @@ func TestCreateDatasetItemRequest_validate(t *testing.T) {
 			err := tt.request.validate()
 			if tt.wantErr {
 				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errMsg)
 			} else {
 				require.NoError(t, err)
 			}
@@ -66,40 +70,31 @@ func TestCreateDatasetItemRequest_validate(t *testing.T) {
 	}
 }
 
-func TestListParams_ToQueryString(t *testing.T) {
+func TestListParams_ToQueryString_V2(t *testing.T) {
 	tests := []struct {
 		name   string
-		params ListDatasetItemParams
+		params ListParams
 		want   string
 	}{
 		{
 			name:   "empty params",
-			params: ListDatasetItemParams{},
+			params: ListParams{},
 			want:   "",
 		},
 		{
-			name: "all params",
-			params: ListDatasetItemParams{
-				Page:        1,
-				Limit:       10,
-				DatasetName: "test-dataset",
-			},
-			want: "datasetName=test-dataset&page=1&limit=10",
+			name:   "page only",
+			params: ListParams{Page: 2},
+			want:   "page=2",
 		},
 		{
-			name: "partial params",
-			params: ListDatasetItemParams{
-				Page:  2,
-				Limit: 20,
-			},
-			want: "page=2&limit=20",
+			name:   "limit only",
+			params: ListParams{Limit: 25},
+			want:   "limit=25",
 		},
 		{
-			name: "dataset name only",
-			params: ListDatasetItemParams{
-				DatasetName: "my-dataset",
-			},
-			want: "datasetName=my-dataset",
+			name:   "both page and limit",
+			params: ListParams{Page: 3, Limit: 15},
+			want:   "page=3&limit=15",
 		},
 	}
 
@@ -111,111 +106,27 @@ func TestListParams_ToQueryString(t *testing.T) {
 	}
 }
 
-func TestClientMethods(t *testing.T) {
-	client := NewClient(nil)
-	require.NotNil(t, client)
-
+func TestClient_Get(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("GetDatasetItem requires ID", func(t *testing.T) {
-		_, err := client.GetDatasetItem(ctx, "")
-		require.Error(t, err)
-	})
-
-	t.Run("DeleteDatasetItem requires ID", func(t *testing.T) {
-		err := client.DeleteDatasetItem(ctx, "")
-		require.Error(t, err)
-	})
-
-	t.Run("CreateDatasetItem validates request", func(t *testing.T) {
-		_, err := client.CreateDatasetItem(ctx, &CreateDatasetItemRequest{})
-		require.Error(t, err)
-
-		validRequest := &CreateDatasetItemRequest{
-			DatasetName:    "test-dataset",
-			Input:          map[string]interface{}{"text": "hello world"},
-			ExpectedOutput: map[string]interface{}{"response": "hello back"},
-		}
-		err = validRequest.validate()
-		require.NoError(t, err)
-	})
-}
-
-func TestDatasetItemStructures(t *testing.T) {
-	t.Run("DatasetItem creation", func(t *testing.T) {
-		item := DatasetItem{
-			ID:             "item-123",
-			DatasetName:    "test-dataset",
-			Input:          map[string]interface{}{"text": "hello"},
-			ExpectedOutput: map[string]interface{}{"response": "hi"},
-			Metadata:       map[string]interface{}{"model": "gpt-4"},
-		}
-
-		require.Equal(t, "item-123", item.ID)
-		require.Equal(t, "test-dataset", item.DatasetName)
-	})
-
-	t.Run("CreateDatasetItemRequest with optional fields", func(t *testing.T) {
-		request := CreateDatasetItemRequest{
-			DatasetName:         "test-dataset",
-			Input:               "simple string input",
-			ExpectedOutput:      "simple string output",
-			Metadata:            map[string]interface{}{"version": "1.0"},
-			ID:                  "custom-id",
-			SourceTraceID:       "trace-123",
-			SourceObservationID: "obs-456",
-			Status:              "active",
-		}
-
-		err := request.validate()
-		require.NoError(t, err)
-		require.Equal(t, "custom-id", request.ID)
-		require.Equal(t, "trace-123", request.SourceTraceID)
-	})
-}
-
-func TestClient_List(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("successful list with all parameters", func(t *testing.T) {
+	t.Run("successful get dataset", func(t *testing.T) {
+		datasetName := "test-dataset"
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items", r.URL.Path)
-			query := r.URL.Query()
-			require.Equal(t, "test-dataset", query.Get("datasetName"))
-			require.Equal(t, "1", query.Get("page"))
-			require.Equal(t, "10", query.Get("limit"))
-			require.Equal(t, "trace-123", query.Get("sourceTraceId"))
-			require.Equal(t, "obs-456", query.Get("sourceObservationId"))
+			require.Equal(t, "/v2/datasets/"+datasetName, r.URL.Path)
+			require.Equal(t, "GET", r.Method)
 
-			mockResponse := ListDatasetItems{
-				Metadata: common.ListMetadata{
-					Page:       1,
-					Limit:      10,
-					TotalItems: 25,
-					TotalPages: 3,
-				},
-				Data: []DatasetItem{
-					{
-						ID:             "item-1",
-						DatasetName:    "test-dataset",
-						Input:          map[string]interface{}{"text": "hello"},
-						ExpectedOutput: map[string]interface{}{"response": "hi"},
-						Metadata:       map[string]interface{}{"model": "gpt-4"},
-						Status:         "active",
-					},
-					{
-						ID:             "item-2",
-						DatasetName:    "test-dataset",
-						Input:          map[string]interface{}{"text": "goodbye"},
-						ExpectedOutput: map[string]interface{}{"response": "bye"},
-						Metadata:       map[string]interface{}{"model": "gpt-3.5"},
-						Status:         "active",
-					},
-				},
+			dataset := Dataset{
+				ID:          "dataset-123",
+				Name:        datasetName,
+				Description: "Test dataset description",
+				Metadata:    map[string]interface{}{"version": "1.0"},
+				ProjectID:   "project-456",
+				CreatedAt:   mustParseTime("2023-01-01T10:00:00Z"),
+				UpdatedAt:   mustParseTime("2023-01-02T11:00:00Z"),
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(mockResponse)
+			err := json.NewEncoder(w).Encode(dataset)
 			require.NoError(t, err)
 		}))
 		defer server.Close()
@@ -223,162 +134,26 @@ func TestClient_List(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		params := ListDatasetItemParams{
-			DatasetName:         "test-dataset",
-			Page:                1,
-			Limit:               10,
-			SourceTraceID:       "trace-123",
-			SourceObservationID: "obs-456",
-		}
-
-		result, err := datasetClient.ListDatasetItems(ctx, params)
+		result, err := datasetClient.Get(ctx, datasetName)
 		require.NoError(t, err)
 		require.NotNil(t, result)
-		require.Equal(t, 2, len(result.Data))
-		require.Equal(t, "item-1", result.Data[0].ID)
-		require.Equal(t, "test-dataset", result.Data[0].DatasetName)
-		require.Equal(t, 25, result.Metadata.TotalItems)
-		require.Equal(t, 3, result.Metadata.TotalPages)
+		require.Equal(t, "dataset-123", result.ID)
+		require.Equal(t, datasetName, result.Name)
+		require.Equal(t, "Test dataset description", result.Description)
+		require.Equal(t, "project-456", result.ProjectID)
 	})
 
-	t.Run("successful list with minimal parameters", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items", r.URL.Path)
-			query := r.URL.Query()
-			require.Equal(t, "minimal-dataset", query.Get("datasetName"))
-			require.Empty(t, query.Get("page"))
-			require.Empty(t, query.Get("limit"))
-
-			mockResponse := ListDatasetItems{
-				Metadata: common.ListMetadata{
-					Page:       1,
-					Limit:      50,
-					TotalItems: 5,
-					TotalPages: 1,
-				},
-				Data: []DatasetItem{
-					{
-						ID:          "item-1",
-						DatasetName: "minimal-dataset",
-						Input:       "simple input",
-						Status:      "active",
-					},
-				},
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(mockResponse)
-			require.NoError(t, err)
-		}))
-		defer server.Close()
-
-		client := resty.New().SetBaseURL(server.URL)
+	t.Run("get with empty dataset name", func(t *testing.T) {
+		client := resty.New()
 		datasetClient := NewClient(client)
 
-		params := ListDatasetItemParams{
-			DatasetName: "minimal-dataset",
-		}
-
-		result, err := datasetClient.ListDatasetItems(ctx, params)
-		require.NoError(t, err)
-		require.NotNil(t, result)
-		require.Equal(t, 1, len(result.Data))
-		require.Equal(t, "item-1", result.Data[0].ID)
-		require.Equal(t, 5, result.Metadata.TotalItems)
-	})
-
-	t.Run("empty list response", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items", r.URL.Path)
-
-			mockResponse := ListDatasetItems{
-				Metadata: common.ListMetadata{
-					Page:       1,
-					Limit:      50,
-					TotalItems: 0,
-					TotalPages: 0,
-				},
-				Data: []DatasetItem{},
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(mockResponse)
-			require.NoError(t, err)
-		}))
-		defer server.Close()
-
-		client := resty.New().SetBaseURL(server.URL)
-		datasetClient := NewClient(client)
-
-		params := ListDatasetItemParams{
-			DatasetName: "empty-dataset",
-		}
-
-		result, err := datasetClient.ListDatasetItems(ctx, params)
-		require.NoError(t, err)
-		require.NotNil(t, result)
-		require.Equal(t, 0, len(result.Data))
-		require.Equal(t, 0, result.Metadata.TotalItems)
-	})
-
-	t.Run("list with no dataset name", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items", r.URL.Path)
-
-			mockResponse := ListDatasetItems{
-				Metadata: common.ListMetadata{
-					Page:       1,
-					Limit:      50,
-					TotalItems: 10,
-					TotalPages: 1,
-				},
-				Data: []DatasetItem{
-					{ID: "item-1", DatasetName: "dataset-1"},
-					{ID: "item-2", DatasetName: "dataset-2"},
-				},
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(mockResponse)
-			require.NoError(t, err)
-		}))
-		defer server.Close()
-
-		client := resty.New().SetBaseURL(server.URL)
-		datasetClient := NewClient(client)
-
-		params := ListDatasetItemParams{
-			Page:  1,
-			Limit: 50,
-		}
-
-		result, err := datasetClient.ListDatasetItems(ctx, params)
-		require.NoError(t, err)
-		require.NotNil(t, result)
-		require.Equal(t, 2, len(result.Data))
-	})
-
-	t.Run("server error", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Internal Server Error"))
-		}))
-		defer server.Close()
-
-		client := resty.New().SetBaseURL(server.URL)
-		datasetClient := NewClient(client)
-
-		params := ListDatasetItemParams{
-			DatasetName: "test-dataset",
-		}
-
-		result, err := datasetClient.ListDatasetItems(ctx, params)
+		result, err := datasetClient.Get(ctx, "")
 		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "500")
+		require.Equal(t, "'datasetName' is required", err.Error())
 	})
 
-	t.Run("not found error", func(t *testing.T) {
+	t.Run("dataset not found", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("Dataset not found"))
@@ -388,104 +163,162 @@ func TestClient_List(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		params := ListDatasetItemParams{
-			DatasetName: "nonexistent-dataset",
-		}
-
-		result, err := datasetClient.ListDatasetItems(ctx, params)
+		result, err := datasetClient.Get(ctx, "nonexistent-dataset")
 		require.Error(t, err)
 		require.Nil(t, result)
 		require.Contains(t, err.Error(), "404")
 	})
 }
 
-func TestClient_Delete(t *testing.T) {
+func TestClient_List_V2(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("successful delete", func(t *testing.T) {
-		itemID := "item-123"
+	t.Run("successful list datasets", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items/"+itemID, r.URL.Path)
-			require.Equal(t, "DELETE", r.Method)
-			w.WriteHeader(http.StatusOK)
+			require.Equal(t, "/v2/datasets", r.URL.Path)
+			require.Equal(t, "GET", r.Method)
+
+			query := r.URL.Query()
+			require.Equal(t, "2", query.Get("page"))
+			require.Equal(t, "5", query.Get("limit"))
+
+			datasets := ListDatasets{
+				Metadata: common.ListMetadata{
+					Page:       2,
+					Limit:      5,
+					TotalItems: 15,
+					TotalPages: 3,
+				},
+				Data: []Dataset{
+					{
+						ID:          "dataset-1",
+						Name:        "dataset-one",
+						Description: "First dataset",
+						ProjectID:   "project-123",
+						CreatedAt:   mustParseTime("2023-01-01T10:00:00Z"),
+						UpdatedAt:   mustParseTime("2023-01-01T10:00:00Z"),
+					},
+					{
+						ID:        "dataset-2",
+						Name:      "dataset-two",
+						ProjectID: "project-123",
+						CreatedAt: mustParseTime("2023-01-02T10:00:00Z"),
+						UpdatedAt: mustParseTime("2023-01-02T10:00:00Z"),
+					},
+				},
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			err := json.NewEncoder(w).Encode(datasets)
+			require.NoError(t, err)
 		}))
 		defer server.Close()
 
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		err := datasetClient.DeleteDatasetItem(ctx, itemID)
+		params := ListParams{Page: 2, Limit: 5}
+		result, err := datasetClient.List(ctx, params)
 		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.Equal(t, 2, len(result.Data))
+		require.Equal(t, "dataset-1", result.Data[0].ID)
+		require.Equal(t, "dataset-one", result.Data[0].Name)
+		require.Equal(t, 15, result.Metadata.TotalItems)
+		require.Equal(t, 3, result.Metadata.TotalPages)
 	})
 
-	t.Run("delete with empty ID", func(t *testing.T) {
+	t.Run("empty dataset list", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			datasets := ListDatasets{
+				Metadata: common.ListMetadata{
+					Page:       1,
+					Limit:      50,
+					TotalItems: 0,
+					TotalPages: 0,
+				},
+				Data: []Dataset{},
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			err := json.NewEncoder(w).Encode(datasets)
+			require.NoError(t, err)
+		}))
+		defer server.Close()
+
+		client := resty.New().SetBaseURL(server.URL)
+		datasetClient := NewClient(client)
+
+		result, err := datasetClient.List(ctx, ListParams{})
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.Equal(t, 0, len(result.Data))
+		require.Equal(t, 0, result.Metadata.TotalItems)
+	})
+}
+
+func TestClient_Create(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("successful create dataset", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, "/v2/datasets", r.URL.Path)
+			require.Equal(t, "POST", r.Method)
+
+			var createReq CreateDatasetRequest
+			err := json.NewDecoder(r.Body).Decode(&createReq)
+			require.NoError(t, err)
+			require.Equal(t, "new-dataset", createReq.Name)
+			require.Equal(t, "A new test dataset", createReq.Description)
+
+			dataset := Dataset{
+				ID:          "dataset-created-123",
+				Name:        createReq.Name,
+				Description: createReq.Description,
+				Metadata:    createReq.Metadata,
+				ProjectID:   "project-456",
+				CreatedAt:   mustParseTime("2023-01-01T10:00:00Z"),
+				UpdatedAt:   mustParseTime("2023-01-01T10:00:00Z"),
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			err = json.NewEncoder(w).Encode(dataset)
+			require.NoError(t, err)
+		}))
+		defer server.Close()
+
+		client := resty.New().SetBaseURL(server.URL)
+		datasetClient := NewClient(client)
+
+		createReq := &CreateDatasetRequest{
+			Name:        "new-dataset",
+			Description: "A new test dataset",
+			Metadata:    map[string]interface{}{"version": "1.0"},
+		}
+
+		result, err := datasetClient.Create(ctx, createReq)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.Equal(t, "dataset-created-123", result.ID)
+		require.Equal(t, "new-dataset", result.Name)
+		require.Equal(t, "A new test dataset", result.Description)
+		require.Equal(t, "project-456", result.ProjectID)
+	})
+
+	t.Run("create with validation error", func(t *testing.T) {
 		client := resty.New()
 		datasetClient := NewClient(client)
 
-		err := datasetClient.DeleteDatasetItem(ctx, "")
+		createReq := &CreateDatasetRequest{} // Missing name
+		result, err := datasetClient.Create(ctx, createReq)
 		require.Error(t, err)
-		require.Equal(t, "'id' is required", err.Error())
+		require.Nil(t, result)
+		require.Equal(t, "'name' is required", err.Error())
 	})
 
-	t.Run("delete nonexistent item", func(t *testing.T) {
-		itemID := "nonexistent-item"
+	t.Run("create with server error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items/"+itemID, r.URL.Path)
-			require.Equal(t, "DELETE", r.Method)
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Dataset item not found"))
-		}))
-		defer server.Close()
-
-		client := resty.New().SetBaseURL(server.URL)
-		datasetClient := NewClient(client)
-
-		err := datasetClient.DeleteDatasetItem(ctx, itemID)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "404")
-	})
-
-	t.Run("delete with server error", func(t *testing.T) {
-		itemID := "error-item"
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items/"+itemID, r.URL.Path)
-			require.Equal(t, "DELETE", r.Method)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Internal Server Error"))
-		}))
-		defer server.Close()
-
-		client := resty.New().SetBaseURL(server.URL)
-		datasetClient := NewClient(client)
-
-		err := datasetClient.DeleteDatasetItem(ctx, itemID)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "500")
-	})
-
-	t.Run("delete with forbidden error", func(t *testing.T) {
-		itemID := "forbidden-item"
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items/"+itemID, r.URL.Path)
-			require.Equal(t, "DELETE", r.Method)
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Access denied"))
-		}))
-		defer server.Close()
-
-		client := resty.New().SetBaseURL(server.URL)
-		datasetClient := NewClient(client)
-
-		err := datasetClient.DeleteDatasetItem(ctx, itemID)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "403")
-	})
-
-	t.Run("delete with validation error", func(t *testing.T) {
-		itemID := "validation-error-item"
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/dataset-items/"+itemID, r.URL.Path)
-			require.Equal(t, "DELETE", r.Method)
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid request"))
 		}))
@@ -494,8 +327,19 @@ func TestClient_Delete(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		err := datasetClient.DeleteDatasetItem(ctx, itemID)
+		createReq := &CreateDatasetRequest{Name: "test-dataset"}
+		result, err := datasetClient.Create(ctx, createReq)
 		require.Error(t, err)
+		require.Nil(t, result)
 		require.Contains(t, err.Error(), "400")
 	})
+}
+
+// Helper functions for tests
+func mustParseTime(s string) time.Time {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		panic(err)
+	}
+	return t
 }

@@ -14,71 +14,40 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// DatasetItem represents a Langfuse dataset item.
-type DatasetItem struct {
-	ID                  string    `json:"id,omitempty"`
-	DatasetID           string    `json:"datasetId,omitempty"`
-	DatasetName         string    `json:"datasetName,omitempty"`
-	Input               any       `json:"input,omitempty"`
-	ExpectedOutput      any       `json:"expectedOutput,omitempty"`
-	Metadata            any       `json:"metadata,omitempty"`
-	SourceTraceID       string    `json:"sourceTraceId,omitempty"`
-	SourceObservationID string    `json:"sourceObservationId,omitempty"`
-	Status              string    `json:"status,omitempty"`
-	CreatedAt           time.Time `json:"createdAt,omitempty"`
-	UpdatedAt           time.Time `json:"updatedAt,omitempty"`
+// Dataset represents a Langfuse dataset.
+type Dataset struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	Metadata    any       `json:"metadata,omitempty"`
+	ProjectID   string    `json:"projectId"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-// CreateDatasetItemRequest represents the request to create a dataset item.
-type CreateDatasetItemRequest struct {
-	DatasetName         string `json:"datasetName"`
-	Input               any    `json:"input,omitempty"`
-	ExpectedOutput      any    `json:"expectedOutput,omitempty"`
-	Metadata            any    `json:"metadata,omitempty"`
-	SourceTraceID       string `json:"sourceTraceId,omitempty"`
-	SourceObservationID string `json:"sourceObservationId,omitempty"`
-	Status              string `json:"status,omitempty"`
-	ID                  string `json:"id,omitempty"`
+// CreateDatasetRequest represents the request body for creating a dataset.
+type CreateDatasetRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Metadata    any    `json:"metadata,omitempty"`
 }
 
-func (c *CreateDatasetItemRequest) validate() error {
-	if c.DatasetName == "" {
-		return errors.New("'datasetName' is required")
+func (r *CreateDatasetRequest) validate() error {
+	if r.Name == "" {
+		return errors.New("'name' is required")
 	}
 	return nil
 }
 
-// UpdateDatasetItemRequest represents the request to update a dataset item.
-type UpdateDatasetItemRequest struct {
-	Input               any    `json:"input,omitempty"`
-	ExpectedOutput      any    `json:"expectedOutput,omitempty"`
-	Metadata            any    `json:"metadata,omitempty"`
-	SourceTraceID       string `json:"sourceTraceId,omitempty"`
-	SourceObservationID string `json:"sourceObservationId,omitempty"`
-	Status              string `json:"status,omitempty"`
+// ListParams defines the query parameters for listing datasets.
+type ListParams struct {
+	Page  int
+	Limit int
 }
 
-// ListDatasetItemParams defines the query parameters for listing dataset items.
-type ListDatasetItemParams struct {
-	DatasetName         string
-	SourceTraceID       string
-	SourceObservationID string
-	Page                int
-	Limit               int
-}
-
-// ToQueryString converts the ListDatasetItemParams to a URL query string.
-func (query *ListDatasetItemParams) ToQueryString() string {
+// ToQueryString converts the ListParams to a URL query string.
+func (query *ListParams) ToQueryString() string {
 	parts := make([]string, 0)
-	if query.DatasetName != "" {
-		parts = append(parts, "datasetName="+query.DatasetName)
-	}
-	if query.SourceTraceID != "" {
-		parts = append(parts, "sourceTraceId="+query.SourceTraceID)
-	}
-	if query.SourceObservationID != "" {
-		parts = append(parts, "sourceObservationId="+query.SourceObservationID)
-	}
 	if query.Page != 0 {
 		parts = append(parts, "page="+strconv.Itoa(query.Page))
 	}
@@ -88,101 +57,83 @@ func (query *ListDatasetItemParams) ToQueryString() string {
 	return strings.Join(parts, "&")
 }
 
-// ListDatasetItems represents the response from listing dataset items.
-type ListDatasetItems struct {
+// ListDatasets represents the response from listing datasets.
+type ListDatasets struct {
 	Metadata common.ListMetadata `json:"meta"`
-	Data     []DatasetItem       `json:"data"`
+	Data     []Dataset           `json:"data"`
 }
 
-// Client represents the dataset items API client.
+// Client represents the datasets API client.
 type Client struct {
 	restyCli *resty.Client
 }
 
-// NewClient creates a new dataset items API client.
+// NewClient creates a new datasets API client.
 func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }
 
-// GetDatasetItem retrieves a specific dataset item by ID.
-func (c *Client) GetDatasetItem(ctx context.Context, id string) (*DatasetItem, error) {
-	if id == "" {
-		return nil, errors.New("'id' is required")
+// V2 Datasets API methods
+
+// Get retrieves a specific dataset by name.
+func (c *Client) Get(ctx context.Context, datasetName string) (*Dataset, error) {
+	if datasetName == "" {
+		return nil, errors.New("'datasetName' is required")
 	}
 
-	var datasetItem DatasetItem
+	var dataset Dataset
 	req := c.restyCli.R().
 		SetContext(ctx).
-		SetResult(&datasetItem).
-		SetPathParam("id", id)
+		SetResult(&dataset).
+		SetPathParam("datasetName", datasetName)
 
-	rsp, err := req.Get("/dataset-items/{id}")
+	rsp, err := req.Get("/v2/datasets/{datasetName}")
 	if err != nil {
 		return nil, err
 	}
 	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("get dataset item failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get dataset failed with status code %d", rsp.StatusCode())
 	}
-	return &datasetItem, nil
+	return &dataset, nil
 }
 
-// ListDatasetItems retrieves a list of dataset items based on the provided parameters.
-func (c *Client) ListDatasetItems(ctx context.Context, params ListDatasetItemParams) (*ListDatasetItems, error) {
-	var listResponse ListDatasetItems
+// List retrieves a list of datasets based on the provided parameters.
+func (c *Client) List(ctx context.Context, params ListParams) (*ListDatasets, error) {
+	var listResponse ListDatasets
 	rsp, err := c.restyCli.R().
 		SetContext(ctx).
 		SetResult(&listResponse).
 		SetQueryString(params.ToQueryString()).
-		Get("/dataset-items")
+		Get("/v2/datasets")
 	if err != nil {
 		return nil, err
 	}
 
 	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("list dataset items failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list datasets failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
 
-// CreateDatasetItem creates a new dataset item.
-func (c *Client) CreateDatasetItem(ctx context.Context, createDatasetItem *CreateDatasetItemRequest) (*DatasetItem, error) {
-	if err := createDatasetItem.validate(); err != nil {
+// Create creates a new dataset.
+func (c *Client) Create(ctx context.Context, createDataset *CreateDatasetRequest) (*Dataset, error) {
+	if err := createDataset.validate(); err != nil {
 		return nil, err
 	}
 
-	var createdDatasetItem DatasetItem
+	var createdDataset Dataset
 	rsp, err := c.restyCli.R().
 		SetContext(ctx).
-		SetBody(createDatasetItem).
-		SetResult(&createdDatasetItem).
-		Post("/dataset-items")
+		SetBody(createDataset).
+		SetResult(&createdDataset).
+		Post("/v2/datasets")
 	if err != nil {
 		return nil, err
 	}
 
 	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to create dataset item: %s, got status code: %d",
+		return nil, fmt.Errorf("failed to create dataset: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
-	return &createdDatasetItem, nil
-}
-
-// DeleteDatasetItem deletes a dataset item by ID.
-func (c *Client) DeleteDatasetItem(ctx context.Context, id string) error {
-	if id == "" {
-		return errors.New("'id' is required")
-	}
-
-	rsp, err := c.restyCli.R().
-		SetContext(ctx).
-		SetPathParam("id", id).
-		Delete("/dataset-items/{id}")
-	if err != nil {
-		return err
-	}
-
-	if rsp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("failed to delete dataset item with status code %d", rsp.StatusCode())
-	}
-	return nil
+	return &createdDataset, nil
 }
