@@ -4,9 +4,10 @@ Go client & SDK for interacting with [langfuse](https://langfuse.com/): tracing,
 
 ## Features
 
-- Trace & observation (span / generation) data structures
-- Prompt Management
-- Model Management
+- Trace 
+- Prompt
+- Model
+- Comments 
 
 And more to come...
 
@@ -97,6 +98,41 @@ func main() {
 
     // Delete a model
     err = langfuse.Models().Delete(ctx, "model-id")
+}
+```
+
+### Comments
+
+```go
+import (
+    "context"
+
+    langfuse "github.com/git-hulk/langfuse-go"
+    "github.com/git-hulk/langfuse-go/pkg/comments"
+)
+
+func main() {
+    langfuse := langfuse.NewClient("YOUR_HOST", "YOUR_PUBLIC_KEY", "YOUR_PRIVATE_KEY")
+
+    ctx := context.Background()
+
+    // Create a comment on a trace
+    createdComment, err := langfuse.Comments().Create(ctx, &comments.CreateCommentRequest{
+        ObjectType: comments.ObjectTypeTrace,
+        ObjectID:   "trace-123",
+        Content:    "This trace looks good!",
+    })
+
+    // Get a comment by ID
+    comment, err := langfuse.Comments().Get(ctx, "comment-id")
+
+    // List comments with filters
+    commentsList, err := langfuse.Comments().List(ctx, comments.ListParams{
+        ObjectType: comments.ObjectTypeTrace,
+        ObjectID:   "trace-123",
+        Page:       1,
+        Limit:      10,
+    })
 }
 ```
 
