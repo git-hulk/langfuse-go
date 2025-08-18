@@ -35,22 +35,22 @@ const (
 )
 
 type Score struct {
-	DataType      ScoreDataType      `json:"dataType"`
-	Value         float64            `json:"value"`
-	ID            string             `json:"id"`
-	TraceID       string             `json:"traceId,omitempty"`
-	SessionID     string             `json:"sessionId,omitempty"`
-	ObservationID string             `json:"observationId,omitempty"`
-	DatasetRunID  string             `json:"datasetRunId,omitempty"`
-	Name          string             `json:"name"`
-	Source        ScoreSource        `json:"source"`
-	Timestamp     time.Time          `json:"timestamp"`
-	CreatedAt     time.Time          `json:"createdAt"`
-	UpdatedAt     time.Time          `json:"updatedAt"`
-	ConfigID      string             `json:"configId,omitempty"`
-	Comment       string             `json:"comment,omitempty"`
-	AuthorUserID  string             `json:"authorUserId,omitempty"`
-	QueueID       string             `json:"queueId,omitempty"`
+	DataType      ScoreDataType     `json:"dataType"`
+	Value         float64           `json:"value"`
+	ID            string            `json:"id"`
+	TraceID       string            `json:"traceId,omitempty"`
+	SessionID     string            `json:"sessionId,omitempty"`
+	ObservationID string            `json:"observationId,omitempty"`
+	DatasetRunID  string            `json:"datasetRunId,omitempty"`
+	Name          string            `json:"name"`
+	Source        ScoreSource       `json:"source"`
+	Timestamp     time.Time         `json:"timestamp"`
+	CreatedAt     time.Time         `json:"createdAt"`
+	UpdatedAt     time.Time         `json:"updatedAt"`
+	ConfigID      string            `json:"configId,omitempty"`
+	Comment       string            `json:"comment,omitempty"`
+	AuthorUserID  string            `json:"authorUserId,omitempty"`
+	QueueID       string            `json:"queueId,omitempty"`
 	Metadata      interface{}       `json:"metadata,omitempty"`
 	Trace         traces.TraceEntry `json:"trace,omitempty"`
 }

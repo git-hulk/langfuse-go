@@ -4,6 +4,7 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/comments"
 	"github.com/git-hulk/langfuse-go/pkg/datasets"
 	"github.com/git-hulk/langfuse-go/pkg/models"
+	"github.com/git-hulk/langfuse-go/pkg/projects"
 	"github.com/git-hulk/langfuse-go/pkg/prompts"
 	"github.com/git-hulk/langfuse-go/pkg/scores"
 	"github.com/git-hulk/langfuse-go/pkg/sessions"
@@ -16,6 +17,7 @@ type LangFuse struct {
 	ingestor *traces.Ingestor
 	prompt   *prompts.Client
 	model    *models.Client
+	project  *projects.Client
 	comment  *comments.Client
 	dataset  *datasets.Client
 	session  *sessions.Client
@@ -32,6 +34,7 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 		ingestor: traces.NewIngestor(restyCli),
 		prompt:   prompts.NewClient(restyCli),
 		model:    models.NewClient(restyCli),
+		project:  projects.NewClient(restyCli),
 		comment:  comments.NewClient(restyCli),
 		dataset:  datasets.NewClient(restyCli),
 		session:  sessions.NewClient(restyCli),
@@ -50,6 +53,10 @@ func (c *LangFuse) Prompts() *prompts.Client {
 
 func (c *LangFuse) Models() *models.Client {
 	return c.model
+}
+
+func (c *LangFuse) Projects() *projects.Client {
+	return c.project
 }
 
 func (c *LangFuse) Comments() *comments.Client {

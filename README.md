@@ -2,15 +2,6 @@
 
 Go client & SDK for interacting with [langfuse](https://langfuse.com/): tracing, prompt management and ingestion batching.
 
-## Features
-
-- Trace 
-- Prompt
-- Model
-- Comments 
-
-And more to come...
-
 ## API Reference
 
 ### Tracing

@@ -341,4 +341,3 @@ func TestClient_GetConfig(t *testing.T) {
 		require.Equal(t, "'configID' is required", err.Error())
 	})
 }
-

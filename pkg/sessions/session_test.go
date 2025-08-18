@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/git-hulk/langfuse-go/pkg/traces"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/git-hulk/langfuse-go/pkg/traces"
 
 	"github.com/git-hulk/langfuse-go/pkg/common"
 )
