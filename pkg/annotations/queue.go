@@ -35,7 +35,7 @@ func (r *CreateQueueRequest) validate() error {
 	if r.Name == "" {
 		return errors.New("'name' is required")
 	}
-	if r.ScoreConfigIDs == nil || len(r.ScoreConfigIDs) == 0 {
+	if len(r.ScoreConfigIDs) == 0 {
 		return errors.New("'scoreConfigIds' is required and cannot be empty")
 	}
 	return nil
