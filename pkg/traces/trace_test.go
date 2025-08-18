@@ -12,9 +12,11 @@ import (
 func TestTrace_End_CalculatesLatency(t *testing.T) {
 	startTime := time.Now().Add(-100 * time.Millisecond)
 	trace := &Trace{
-		ID:        "test-traces-id",
-		Name:      "test-traces",
-		Timestamp: startTime,
+		TraceEntry: TraceEntry{
+			ID:        "test-traces-id",
+			Name:      "test-traces",
+			Timestamp: startTime,
+		},
 	}
 
 	latency := time.Since(startTime).Milliseconds()
@@ -26,8 +28,10 @@ func TestTrace_End_CalculatesLatency(t *testing.T) {
 
 func TestTrace_StartSpan(t *testing.T) {
 	trace := &Trace{
-		ID:           "test-traces-id",
-		Name:         "test-traces",
+		TraceEntry: TraceEntry{
+			ID:   "test-traces-id",
+			Name: "test-traces",
+		},
 		observations: []*Observation{},
 	}
 
@@ -50,8 +54,10 @@ func TestTrace_StartSpan(t *testing.T) {
 
 func TestTrace_MultipleSpans(t *testing.T) {
 	trace := &Trace{
-		ID:           "test-traces-id",
-		Name:         "test-traces",
+		TraceEntry: TraceEntry{
+			ID:   "test-traces-id",
+			Name: "test-traces",
+		},
 		observations: []*Observation{},
 	}
 
@@ -66,16 +72,18 @@ func TestTrace_MultipleSpans(t *testing.T) {
 
 func TestTrace_Fields(t *testing.T) {
 	trace := &Trace{
-		ID:          "test-id",
-		Name:        "test-name",
-		SessionID:   "session-123",
-		Release:     "v1.0.0",
-		Version:     "1.0",
-		UserID:      "user-456",
-		Metadata:    map[string]interface{}{"key": "value"},
-		Tags:        []string{"tag1", "tag2"},
-		TotalCost:   0.05,
-		Environment: "test",
+		TraceEntry: TraceEntry{
+			ID:          "test-id",
+			Name:        "test-name",
+			SessionID:   "session-123",
+			Release:     "v1.0.0",
+			Version:     "1.0",
+			UserID:      "user-456",
+			Metadata:    map[string]interface{}{"key": "value"},
+			Tags:        []string{"tag1", "tag2"},
+			TotalCost:   0.05,
+			Environment: "test",
+		},
 	}
 
 	assert.Equal(t, "test-id", trace.ID)

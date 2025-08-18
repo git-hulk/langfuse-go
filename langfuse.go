@@ -5,6 +5,7 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/datasets"
 	"github.com/git-hulk/langfuse-go/pkg/models"
 	"github.com/git-hulk/langfuse-go/pkg/prompts"
+	"github.com/git-hulk/langfuse-go/pkg/sessions"
 	"github.com/git-hulk/langfuse-go/pkg/traces"
 
 	"github.com/go-resty/resty/v2"
@@ -16,6 +17,7 @@ type LangFuse struct {
 	model    *models.Client
 	comment  *comments.Client
 	dataset  *datasets.Client
+	session  *sessions.Client
 	restyCli *resty.Client
 }
 
@@ -30,6 +32,7 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 		model:    models.NewClient(restyCli),
 		comment:  comments.NewClient(restyCli),
 		dataset:  datasets.NewClient(restyCli),
+		session:  sessions.NewClient(restyCli),
 		restyCli: restyCli,
 	}
 }
@@ -52,6 +55,10 @@ func (c *LangFuse) Comments() *comments.Client {
 
 func (c *LangFuse) Datasets() *datasets.Client {
 	return c.dataset
+}
+
+func (c *LangFuse) Sessions() *sessions.Client {
+	return c.session
 }
 
 func (c *LangFuse) Close() error {

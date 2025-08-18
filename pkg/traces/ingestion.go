@@ -96,10 +96,12 @@ func (ingestor *Ingestor) Send(ctx context.Context, traces []*Trace) error {
 func (ingestor *Ingestor) StartTrace(Name string) *Trace {
 	return &Trace{
 		ingestor:     ingestor,
-		ID:           uuid.Must(uuid.NewV4()).String(),
-		Name:         Name,
-		Timestamp:    time.Now(),
 		observations: make([]*Observation, 0),
+		TraceEntry: TraceEntry{
+			ID:        uuid.Must(uuid.NewV4()).String(),
+			Name:      Name,
+			Timestamp: time.Now(),
+		},
 	}
 }
 

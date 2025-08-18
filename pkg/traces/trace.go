@@ -6,9 +6,7 @@ import (
 	"github.com/gofrs/uuid/v5"
 )
 
-type Trace struct {
-	ingestor *Ingestor
-
+type TraceEntry struct {
 	ID          string    `json:"id,omitempty"`
 	Name        string    `json:"name,omitempty"`
 	Timestamp   time.Time `json:"timestamp,omitempty"`
@@ -23,7 +21,12 @@ type Trace struct {
 	Latency     int64     `json:"latency,omitempty"`   // in milliseconds
 	TotalCost   float64   `json:"totalCost,omitempty"` // in USD
 	Environment string    `json:"environment,omitempty"`
+}
 
+type Trace struct {
+	TraceEntry
+
+	ingestor     *Ingestor
 	observations []*Observation
 }
 
