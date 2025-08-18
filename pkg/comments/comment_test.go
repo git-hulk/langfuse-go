@@ -197,17 +197,17 @@ func TestClientMethods(t *testing.T) {
 
 	ctx := context.Background()
 
-	t.Run("Get requires ID", func(t *testing.T) {
+	t.Run("GetDatasetItem requires ID", func(t *testing.T) {
 		_, err := client.Get(ctx, "")
 		if err == nil {
-			t.Error("Get() should return error when ID is empty")
+			t.Error("GetDatasetItem() should return error when ID is empty")
 		}
 	})
 
-	t.Run("Create validates request", func(t *testing.T) {
+	t.Run("CreateDatasetItem validates request", func(t *testing.T) {
 		_, err := client.Create(ctx, &CreateCommentRequest{})
 		if err == nil {
-			t.Error("Create() should return error for invalid request")
+			t.Error("CreateDatasetItem() should return error for invalid request")
 		}
 
 		validRequest := &CreateCommentRequest{

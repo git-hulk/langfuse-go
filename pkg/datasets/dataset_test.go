@@ -69,17 +69,17 @@ func TestCreateDatasetItemRequest_validate(t *testing.T) {
 func TestListParams_ToQueryString(t *testing.T) {
 	tests := []struct {
 		name   string
-		params ListParams
+		params ListDatasetItemParams
 		want   string
 	}{
 		{
 			name:   "empty params",
-			params: ListParams{},
+			params: ListDatasetItemParams{},
 			want:   "",
 		},
 		{
 			name: "all params",
-			params: ListParams{
+			params: ListDatasetItemParams{
 				Page:        1,
 				Limit:       10,
 				DatasetName: "test-dataset",
@@ -88,7 +88,7 @@ func TestListParams_ToQueryString(t *testing.T) {
 		},
 		{
 			name: "partial params",
-			params: ListParams{
+			params: ListDatasetItemParams{
 				Page:  2,
 				Limit: 20,
 			},
@@ -96,7 +96,7 @@ func TestListParams_ToQueryString(t *testing.T) {
 		},
 		{
 			name: "dataset name only",
-			params: ListParams{
+			params: ListDatasetItemParams{
 				DatasetName: "my-dataset",
 			},
 			want: "datasetName=my-dataset",
@@ -117,18 +117,18 @@ func TestClientMethods(t *testing.T) {
 
 	ctx := context.Background()
 
-	t.Run("Get requires ID", func(t *testing.T) {
-		_, err := client.Get(ctx, "")
+	t.Run("GetDatasetItem requires ID", func(t *testing.T) {
+		_, err := client.GetDatasetItem(ctx, "")
 		require.Error(t, err)
 	})
 
-	t.Run("Delete requires ID", func(t *testing.T) {
-		err := client.Delete(ctx, "")
+	t.Run("DeleteDatasetItem requires ID", func(t *testing.T) {
+		err := client.DeleteDatasetItem(ctx, "")
 		require.Error(t, err)
 	})
 
-	t.Run("Create validates request", func(t *testing.T) {
-		_, err := client.Create(ctx, &CreateDatasetItemRequest{})
+	t.Run("CreateDatasetItem validates request", func(t *testing.T) {
+		_, err := client.CreateDatasetItem(ctx, &CreateDatasetItemRequest{})
 		require.Error(t, err)
 
 		validRequest := &CreateDatasetItemRequest{
@@ -223,7 +223,7 @@ func TestClient_List(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		params := ListParams{
+		params := ListDatasetItemParams{
 			DatasetName:         "test-dataset",
 			Page:                1,
 			Limit:               10,
@@ -231,7 +231,7 @@ func TestClient_List(t *testing.T) {
 			SourceObservationID: "obs-456",
 		}
 
-		result, err := datasetClient.List(ctx, params)
+		result, err := datasetClient.ListDatasetItems(ctx, params)
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		require.Equal(t, 2, len(result.Data))
@@ -275,11 +275,11 @@ func TestClient_List(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		params := ListParams{
+		params := ListDatasetItemParams{
 			DatasetName: "minimal-dataset",
 		}
 
-		result, err := datasetClient.List(ctx, params)
+		result, err := datasetClient.ListDatasetItems(ctx, params)
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		require.Equal(t, 1, len(result.Data))
@@ -310,11 +310,11 @@ func TestClient_List(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		params := ListParams{
+		params := ListDatasetItemParams{
 			DatasetName: "empty-dataset",
 		}
 
-		result, err := datasetClient.List(ctx, params)
+		result, err := datasetClient.ListDatasetItems(ctx, params)
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		require.Equal(t, 0, len(result.Data))
@@ -347,12 +347,12 @@ func TestClient_List(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		params := ListParams{
+		params := ListDatasetItemParams{
 			Page:  1,
 			Limit: 50,
 		}
 
-		result, err := datasetClient.List(ctx, params)
+		result, err := datasetClient.ListDatasetItems(ctx, params)
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		require.Equal(t, 2, len(result.Data))
@@ -368,11 +368,11 @@ func TestClient_List(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		params := ListParams{
+		params := ListDatasetItemParams{
 			DatasetName: "test-dataset",
 		}
 
-		result, err := datasetClient.List(ctx, params)
+		result, err := datasetClient.ListDatasetItems(ctx, params)
 		require.Error(t, err)
 		require.Nil(t, result)
 		require.Contains(t, err.Error(), "500")
@@ -388,11 +388,11 @@ func TestClient_List(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		params := ListParams{
+		params := ListDatasetItemParams{
 			DatasetName: "nonexistent-dataset",
 		}
 
-		result, err := datasetClient.List(ctx, params)
+		result, err := datasetClient.ListDatasetItems(ctx, params)
 		require.Error(t, err)
 		require.Nil(t, result)
 		require.Contains(t, err.Error(), "404")
@@ -414,7 +414,7 @@ func TestClient_Delete(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		err := datasetClient.Delete(ctx, itemID)
+		err := datasetClient.DeleteDatasetItem(ctx, itemID)
 		require.NoError(t, err)
 	})
 
@@ -422,7 +422,7 @@ func TestClient_Delete(t *testing.T) {
 		client := resty.New()
 		datasetClient := NewClient(client)
 
-		err := datasetClient.Delete(ctx, "")
+		err := datasetClient.DeleteDatasetItem(ctx, "")
 		require.Error(t, err)
 		require.Equal(t, "'id' is required", err.Error())
 	})
@@ -440,7 +440,7 @@ func TestClient_Delete(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		err := datasetClient.Delete(ctx, itemID)
+		err := datasetClient.DeleteDatasetItem(ctx, itemID)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "404")
 	})
@@ -458,7 +458,7 @@ func TestClient_Delete(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		err := datasetClient.Delete(ctx, itemID)
+		err := datasetClient.DeleteDatasetItem(ctx, itemID)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "500")
 	})
@@ -476,7 +476,7 @@ func TestClient_Delete(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		err := datasetClient.Delete(ctx, itemID)
+		err := datasetClient.DeleteDatasetItem(ctx, itemID)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "403")
 	})
@@ -494,7 +494,7 @@ func TestClient_Delete(t *testing.T) {
 		client := resty.New().SetBaseURL(server.URL)
 		datasetClient := NewClient(client)
 
-		err := datasetClient.Delete(ctx, itemID)
+		err := datasetClient.DeleteDatasetItem(ctx, itemID)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "400")
 	})

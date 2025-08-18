@@ -58,8 +58,8 @@ type UpdateDatasetItemRequest struct {
 	Status              string `json:"status,omitempty"`
 }
 
-// ListParams defines the query parameters for listing dataset items.
-type ListParams struct {
+// ListDatasetItemParams defines the query parameters for listing dataset items.
+type ListDatasetItemParams struct {
 	DatasetName         string
 	SourceTraceID       string
 	SourceObservationID string
@@ -67,8 +67,8 @@ type ListParams struct {
 	Limit               int
 }
 
-// ToQueryString converts the ListParams to a URL query string.
-func (query *ListParams) ToQueryString() string {
+// ToQueryString converts the ListDatasetItemParams to a URL query string.
+func (query *ListDatasetItemParams) ToQueryString() string {
 	parts := make([]string, 0)
 	if query.DatasetName != "" {
 		parts = append(parts, "datasetName="+query.DatasetName)
@@ -104,8 +104,8 @@ func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }
 
-// Get retrieves a specific dataset item by ID.
-func (c *Client) Get(ctx context.Context, id string) (*DatasetItem, error) {
+// GetDatasetItem retrieves a specific dataset item by ID.
+func (c *Client) GetDatasetItem(ctx context.Context, id string) (*DatasetItem, error) {
 	if id == "" {
 		return nil, errors.New("'id' is required")
 	}
@@ -126,8 +126,8 @@ func (c *Client) Get(ctx context.Context, id string) (*DatasetItem, error) {
 	return &datasetItem, nil
 }
 
-// List retrieves a list of dataset items based on the provided parameters.
-func (c *Client) List(ctx context.Context, params ListParams) (*ListDatasetItems, error) {
+// ListDatasetItems retrieves a list of dataset items based on the provided parameters.
+func (c *Client) ListDatasetItems(ctx context.Context, params ListDatasetItemParams) (*ListDatasetItems, error) {
 	var listResponse ListDatasetItems
 	rsp, err := c.restyCli.R().
 		SetContext(ctx).
@@ -144,8 +144,8 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListDatasetItems
 	return &listResponse, nil
 }
 
-// Create creates a new dataset item.
-func (c *Client) Create(ctx context.Context, createDatasetItem *CreateDatasetItemRequest) (*DatasetItem, error) {
+// CreateDatasetItem creates a new dataset item.
+func (c *Client) CreateDatasetItem(ctx context.Context, createDatasetItem *CreateDatasetItemRequest) (*DatasetItem, error) {
 	if err := createDatasetItem.validate(); err != nil {
 		return nil, err
 	}
@@ -167,8 +167,8 @@ func (c *Client) Create(ctx context.Context, createDatasetItem *CreateDatasetIte
 	return &createdDatasetItem, nil
 }
 
-// Delete deletes a dataset item by ID.
-func (c *Client) Delete(ctx context.Context, id string) error {
+// DeleteDatasetItem deletes a dataset item by ID.
+func (c *Client) DeleteDatasetItem(ctx context.Context, id string) error {
 	if id == "" {
 		return errors.New("'id' is required")
 	}
