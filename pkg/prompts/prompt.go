@@ -119,13 +119,15 @@ func NewClient(cli *resty.Client) *Client {
 }
 
 // Get retrieves a specific prompt by name, version, and label.
-func (c *Client) Get(params GetParams) (*PromptEntry, error) {
+func (c *Client) Get(ctx context.Context, params GetParams) (*PromptEntry, error) {
 	if params.Name == "" {
 		return nil, errors.New("'name' is required")
 	}
 
 	var prompt PromptEntry
-	req := c.restyCli.R().SetResult(&prompt)
+	req := c.restyCli.R().
+		SetContext(ctx).
+		SetResult(&prompt)
 	if params.Version > 0 {
 		req.SetQueryParam("version", strconv.Itoa(params.Version))
 	}
