@@ -2,24 +2,6 @@
 
 Go client & SDK for interacting with [Langfuse](https://langfuse.com/). Provides comprehensive support for observability tracing, prompt management, model configuration, datasets, sessions, scores, projects, LLM connections, and organization management with efficient batch processing.
 
-## Installation
-
-```bash
-go get github.com/git-hulk/langfuse-go
-```
-
-## Features
-
-- **🔍 Tracing & Observability**: Hierarchical tracing with spans and observations, efficient batch ingestion
-- **📝 Prompt Management**: Create, retrieve, and manage prompts with versioning support  
-- **🤖 Model Management**: Configure and manage LLM models with pricing and usage tracking
-- **📊 Datasets**: Create and manage datasets for evaluation and testing
-- **👥 Sessions**: Group and analyze traces by user sessions with filtering
-- **⭐ Scores**: Evaluate model performance with numeric, boolean, and categorical scores
-- **🏗️ Projects**: Manage projects and API keys (organization-scoped operations)
-- **🔗 LLM Connections**: Configure connections to various LLM providers (OpenAI, Anthropic, Azure, etc.)
-- **💬 Comments**: Add contextual comments to traces and observations
-
 ## Table of Contents
 
 - [Installation](#installation)
