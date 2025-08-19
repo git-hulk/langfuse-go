@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -108,7 +107,7 @@ func (c *Client) GetDatasetItem(ctx context.Context, id string) (*DatasetItem, e
 	if err != nil {
 		return nil, err
 	}
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get dataset item failed with status code %d", rsp.StatusCode())
 	}
 	return &datasetItem, nil
@@ -126,7 +125,7 @@ func (c *Client) ListDatasetItems(ctx context.Context, params ListDatasetItemPar
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list dataset items failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -148,9 +147,9 @@ func (c *Client) CreateDatasetItem(ctx context.Context, createDatasetItem *Creat
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to create dataset item: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+	if rsp.IsError() {
+		return nil, fmt.Errorf("failed to create dataset item, got status code: %d",
+			rsp.StatusCode())
 	}
 	return &createdDatasetItem, nil
 }
@@ -169,7 +168,7 @@ func (c *Client) DeleteDatasetItem(ctx context.Context, id string) error {
 		return err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return fmt.Errorf("failed to delete dataset item with status code %d", rsp.StatusCode())
 	}
 	return nil

@@ -114,7 +114,7 @@ func (c *Client) Get(ctx context.Context) (*ProjectsResponse, error) {
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get projects failed with status code %d", rsp.StatusCode())
 	}
 	return &projects, nil
@@ -136,7 +136,7 @@ func (c *Client) Create(ctx context.Context, createReq *CreateProjectRequest) (*
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to create project: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
@@ -163,9 +163,8 @@ func (c *Client) Update(ctx context.Context, projectID string, updateReq *Update
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to update project: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+	if rsp.IsError() {
+		return nil, fmt.Errorf("failed to update project, got status code: %d", rsp.StatusCode())
 	}
 	return &updatedProject, nil
 }
@@ -209,7 +208,7 @@ func (c *Client) GetAPIKeys(ctx context.Context, projectID string) (*APIKeyList,
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get project API keys failed with status code %d", rsp.StatusCode())
 	}
 	return &apiKeys, nil
@@ -232,7 +231,7 @@ func (c *Client) CreateAPIKey(ctx context.Context, projectID string, createReq *
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to create API key: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
@@ -259,7 +258,7 @@ func (c *Client) DeleteAPIKey(ctx context.Context, projectID, apiKeyID string) (
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("delete API key failed with status code %d", rsp.StatusCode())
 	}
 	return &deleteResponse, nil

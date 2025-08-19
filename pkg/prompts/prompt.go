@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -140,7 +139,7 @@ func (c *Client) Get(ctx context.Context, params GetParams) (*PromptEntry, error
 	if err != nil {
 		return nil, err
 	}
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get prompt failed with status code %d", rsp.StatusCode())
 	}
 	return &prompt, nil
@@ -158,7 +157,7 @@ func (c Client) List(ctx context.Context, params ListParams) (*ListPrompts, erro
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list prompts failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -183,9 +182,8 @@ func (c *Client) Create(ctx context.Context, createPrompt *PromptEntry) (*Prompt
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to create prompt: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+	if rsp.IsError() {
+		return nil, fmt.Errorf("failed to create prompt, got status code: %d", rsp.StatusCode())
 	}
 	return &createdPrompt, nil
 }

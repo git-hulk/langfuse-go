@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -94,7 +93,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListSessions, er
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list sessions failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -117,7 +116,7 @@ func (c *Client) Get(ctx context.Context, sessionID string) (*SessionWithTraces,
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get session failed with status code %d", rsp.StatusCode())
 	}
 	return &session, nil

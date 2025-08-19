@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -115,7 +114,7 @@ func (c *QueueClient) Get(ctx context.Context, queueID string) (*Queue, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get annotation queue failed with status code %d", rsp.StatusCode())
 	}
 	return &queue, nil
@@ -133,7 +132,7 @@ func (c *QueueClient) List(ctx context.Context, params QueueListParams) (*ListQu
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list annotation queues failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -155,7 +154,7 @@ func (c *QueueClient) Create(ctx context.Context, createRequest *CreateQueueRequ
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to create annotation queue: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
@@ -182,7 +181,7 @@ func (c *QueueClient) CreateAssignment(ctx context.Context, queueID string, requ
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to create assignment: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
@@ -209,7 +208,7 @@ func (c *QueueClient) DeleteAssignment(ctx context.Context, queueID string, requ
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to delete assignment: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}

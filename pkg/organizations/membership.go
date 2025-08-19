@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -70,7 +69,7 @@ func (c *MembershipClient) GetOrganizationMemberships(ctx context.Context) (*Mem
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get organization memberships failed with status code %d", rsp.StatusCode())
 	}
 	return &memberships, nil
@@ -93,7 +92,7 @@ func (c *MembershipClient) UpdateOrganizationMembership(ctx context.Context, mem
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to update organization membership: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
@@ -117,7 +116,7 @@ func (c *MembershipClient) GetProjectMemberships(ctx context.Context, projectId 
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get project memberships failed with status code %d", rsp.StatusCode())
 	}
 	return &memberships, nil
@@ -145,9 +144,8 @@ func (c *MembershipClient) UpdateProjectMembership(ctx context.Context, projectI
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to update project membership: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+	if rsp.IsError() {
+		return nil, fmt.Errorf("failed to update project membershipx, got status code: %d", rsp.StatusCode())
 	}
 	return &updatedMembership, nil
 }

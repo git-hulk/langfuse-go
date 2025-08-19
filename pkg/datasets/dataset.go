@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -91,7 +90,7 @@ func (c *Client) Get(ctx context.Context, datasetName string) (*Dataset, error) 
 	if err != nil {
 		return nil, err
 	}
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get dataset failed with status code %d", rsp.StatusCode())
 	}
 	return &dataset, nil
@@ -109,7 +108,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListDatasets, er
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list datasets failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -131,9 +130,9 @@ func (c *Client) Create(ctx context.Context, createDataset *CreateDatasetRequest
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to create dataset: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+	if rsp.IsError() {
+		return nil, fmt.Errorf("failed to create dataset, got status code: %d",
+			rsp.StatusCode())
 	}
 	return &createdDataset, nil
 }

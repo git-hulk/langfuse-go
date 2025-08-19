@@ -8,6 +8,7 @@ import (
 
 	"github.com/git-hulk/langfuse-go"
 	"github.com/git-hulk/langfuse-go/pkg/models"
+	"github.com/git-hulk/langfuse-go/pkg/prompts"
 )
 
 func runTraceTests(client *langfuse.LangFuse) {
@@ -86,6 +87,72 @@ func runModelTests(client *langfuse.LangFuse) {
 	fmt.Println("Model API tests completed!")
 }
 
+func runPromptTests(client *langfuse.LangFuse) {
+	ctx := context.Background()
+	promptClient := client.Prompts()
+
+	fmt.Println("Testing Prompt API...")
+
+	// Test creating a prompt
+	testPrompt := &prompts.PromptEntry{
+		Name: "test-prompt",
+		Type: "chat",
+		Prompt: []prompts.ChatMessageWithPlaceHolder{
+			{
+				Role:    "system",
+				Type:    "text",
+				Content: "You are a helpful assistant.",
+			},
+			{
+				Role:    "user",
+				Type:    "text",
+				Content: "Hello {{name}}, how can I help you today?",
+			},
+		},
+		Tags:   []string{"test", "integration"},
+		Labels: []string{"v1"},
+	}
+
+	fmt.Println("Creating test prompt...")
+	createdPrompt, err := promptClient.Create(ctx, testPrompt)
+	if err != nil {
+		fmt.Printf("Error creating prompt: %v\n", err)
+		return
+	}
+	fmt.Printf("Created prompt: %s (version: %d)\n", createdPrompt.Name, createdPrompt.Version)
+
+	// Test listing prompts
+	fmt.Println("Listing prompts...")
+	listParams := prompts.ListParams{
+		Page:  1,
+		Limit: 10,
+	}
+	listResponse, err := promptClient.List(ctx, listParams)
+	if err != nil {
+		fmt.Printf("Error listing prompts: %v\n", err)
+	} else {
+		fmt.Printf("Found %d prompts\n", len(listResponse.Data.Prompts))
+	}
+
+	// Test getting a specific prompt
+	if createdPrompt.Name != "" {
+		fmt.Printf("Getting prompt by name: %s\n", createdPrompt.Name)
+		getParams := prompts.GetParams{
+			Name:    createdPrompt.Name,
+			Version: createdPrompt.Version,
+		}
+		retrievedPrompt, err := promptClient.Get(ctx, getParams)
+		if err != nil {
+			fmt.Printf("Error getting prompt: %v\n", err)
+		} else {
+			fmt.Printf("Retrieved prompt: %s (type: %s, messages: %d)\n",
+				retrievedPrompt.Name, retrievedPrompt.Type, len(retrievedPrompt.Prompt))
+		}
+	}
+
+	fmt.Println("Prompt API tests completed!")
+}
+
 func main() {
 	langfuseHost := "https://us.cloud.langfuse.com"
 	langfusePubKey := os.Getenv("LANGFUSE_PUBLIC_KEY")
@@ -104,4 +171,7 @@ func main() {
 
 	// Test Models
 	runModelTests(client)
+
+	// Test Prompts
+	runPromptTests(client)
 }

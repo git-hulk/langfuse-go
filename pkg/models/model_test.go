@@ -124,7 +124,7 @@ func TestModelClient_List(t *testing.T) {
 func TestModelClient_Create(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "models", r.URL.Path)
+			require.Equal(t, "/models", r.URL.Path)
 			require.Equal(t, "POST", r.Method)
 			var model ModelEntry
 			err := json.NewDecoder(r.Body).Decode(&model)

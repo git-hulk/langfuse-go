@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -129,7 +128,7 @@ func (c *Client) Get(ctx context.Context, id string) (*CommentEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get comment failed with status code %d", rsp.StatusCode())
 	}
 	return &comment, nil
@@ -147,7 +146,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListComments, er
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list comments failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -169,9 +168,9 @@ func (c *Client) Create(ctx context.Context, createComment *CreateCommentRequest
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to create comment: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+	if rsp.IsError() {
+		return nil, fmt.Errorf("failed to create comment, got status code: %d",
+			rsp.StatusCode())
 	}
 	return &createdComment, nil
 }

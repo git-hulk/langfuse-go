@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -141,7 +140,7 @@ func (c *ItemClient) Get(ctx context.Context, queueID, itemID string) (*Item, er
 	if err != nil {
 		return nil, err
 	}
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get annotation queue item failed with status code %d", rsp.StatusCode())
 	}
 	return &item, nil
@@ -164,7 +163,7 @@ func (c *ItemClient) List(ctx context.Context, queueID string, params ItemListPa
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list annotation queue items failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -190,7 +189,7 @@ func (c *ItemClient) Create(ctx context.Context, queueID string, createRequest *
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to create annotation queue item: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
@@ -221,7 +220,7 @@ func (c *ItemClient) Update(ctx context.Context, queueID, itemID string, updateR
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to update annotation queue item: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
@@ -248,7 +247,7 @@ func (c *ItemClient) Delete(ctx context.Context, queueID, itemID string) (*Delet
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to delete annotation queue item: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -128,9 +127,8 @@ func (c *Client) CreateConfig(ctx context.Context, createConfig *CreateScoreConf
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to create score config: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+	if rsp.IsError() {
+		return nil, fmt.Errorf("failed to create score config, got status code: %d", rsp.StatusCode())
 	}
 	return &createdConfig, nil
 }
@@ -147,7 +145,7 @@ func (c *Client) ListConfigs(ctx context.Context, params ConfigListParams) (*Lis
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list score configs failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -170,7 +168,7 @@ func (c *Client) GetConfig(ctx context.Context, configID string) (*ScoreConfig, 
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get score config failed with status code %d", rsp.StatusCode())
 	}
 	return &config, nil

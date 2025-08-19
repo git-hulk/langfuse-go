@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -121,7 +120,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListLLMConnectio
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list LLM connections failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -143,9 +142,9 @@ func (c *Client) Upsert(ctx context.Context, req *UpsertLLMConnectionRequest) (*
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to upsert LLM connection: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+	if rsp.IsError() {
+		return nil, fmt.Errorf("failed to upsert LLM connection, got status code: %d",
+			rsp.StatusCode())
 	}
 	return &connection, nil
 }

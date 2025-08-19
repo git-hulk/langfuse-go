@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/git-hulk/langfuse-go/pkg/common"
@@ -69,7 +68,7 @@ func (c *Client) GetDatasetRuns(ctx context.Context, datasetName string, params 
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get dataset runs failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -96,7 +95,7 @@ func (c *Client) GetDatasetRun(ctx context.Context, datasetName, runName string)
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get dataset run failed with status code %d", rsp.StatusCode())
 	}
 	return &datasetRun, nil
@@ -123,7 +122,7 @@ func (c *Client) DeleteDatasetRun(ctx context.Context, datasetName, runName stri
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("delete dataset run failed with status code %d", rsp.StatusCode())
 	}
 	return &deleteResponse, nil

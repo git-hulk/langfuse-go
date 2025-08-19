@@ -198,7 +198,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListScores, erro
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("list scores failed with status code %d", rsp.StatusCode())
 	}
 	return &listResponse, nil
@@ -221,7 +221,7 @@ func (c *Client) Get(ctx context.Context, scoreID string) (*Score, error) {
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("get score failed with status code %d", rsp.StatusCode())
 	}
 	return &score, nil
@@ -243,7 +243,7 @@ func (c *Client) Create(ctx context.Context, createScore *CreateScoreRequest) (*
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusOK {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("failed to create score: %s, got status code: %d",
 			rsp.String(), rsp.StatusCode())
 	}
