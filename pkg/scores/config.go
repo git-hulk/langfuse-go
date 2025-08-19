@@ -123,7 +123,7 @@ func (c *Client) CreateConfig(ctx context.Context, createConfig *CreateScoreConf
 		SetContext(ctx).
 		SetBody(createConfig).
 		SetResult(&createdConfig).
-		Post("/api/public/score-configs")
+		Post("/score-configs")
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (c *Client) ListConfigs(ctx context.Context, params ConfigListParams) (*Lis
 		SetContext(ctx).
 		SetResult(&listResponse).
 		SetQueryString(params.ToQueryString()).
-		Get("/api/public/score-configs")
+		Get("/score-configs")
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (c *Client) GetConfig(ctx context.Context, configID string) (*ScoreConfig, 
 		SetResult(&config).
 		SetPathParam("configId", configID)
 
-	rsp, err := req.Get("/api/public/score-configs/{configId}")
+	rsp, err := req.Get("/score-configs/{configId}")
 	if err != nil {
 		return nil, err
 	}

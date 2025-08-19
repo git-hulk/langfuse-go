@@ -71,7 +71,7 @@ func TestModelEntry_validate(t *testing.T) {
 func TestModelClient_Get(t *testing.T) {
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/api/public/models/test-model-id", r.URL.Path)
+			require.Equal(t, "/models/test-model-id", r.URL.Path)
 			model := ModelEntry{ID: "test-model-id", ModelName: "gpt-4", Unit: "TOKENS"}
 			w.Header().Set("Content-Type", "application/json")
 			err := json.NewEncoder(w).Encode(model)
@@ -99,7 +99,7 @@ func TestModelClient_Get_MissingID(t *testing.T) {
 func TestModelClient_List(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/api/public/models", r.URL.Path)
+			require.Equal(t, "/models", r.URL.Path)
 			w.Header().Set("Content-Type", "application/json")
 			_, err := w.Write([]byte(`{"meta":{"page":1,"limit":10,"totalItems":1,"totalPages":1},"data":[{"id":"test-model-id","modelName":"gpt-4","unit":"TOKENS"}]}`))
 			require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestModelClient_List(t *testing.T) {
 func TestModelClient_Create(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/api/public/models", r.URL.Path)
+			require.Equal(t, "models", r.URL.Path)
 			require.Equal(t, "POST", r.Method)
 			var model ModelEntry
 			err := json.NewDecoder(r.Body).Decode(&model)
@@ -168,7 +168,7 @@ func TestModelClient_Create_ValidationError(t *testing.T) {
 func TestModelClient_Delete(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/api/public/models/test-model-id", r.URL.Path)
+			require.Equal(t, "/models/test-model-id", r.URL.Path)
 			require.Equal(t, "DELETE", r.Method)
 			w.WriteHeader(http.StatusNoContent)
 		}))

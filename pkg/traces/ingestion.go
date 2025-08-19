@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	IngestionCreateTrace = "traces-create"
+	IngestionCreateTrace = "trace-create"
 	IngestionCreateSpan  = "span-create"
 )
 

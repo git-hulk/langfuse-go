@@ -93,7 +93,7 @@ func (c *Client) Get(ctx context.Context, id string) (*ModelEntry, error) {
 		SetResult(&model).
 		SetPathParam("id", id)
 
-	rsp, err := req.Get("/api/public/models/{id}")
+	rsp, err := req.Get("/models/{id}")
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListModels, erro
 		SetContext(ctx).
 		SetResult(&listResponse).
 		SetQueryString(params.ToQueryString()).
-		Get("/api/public/models")
+		Get("/models")
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (c *Client) Create(ctx context.Context, createModel *ModelEntry) (*ModelEnt
 		SetContext(ctx).
 		SetBody(createModel).
 		SetResult(&createdModel).
-		Post("/api/public/models")
+		Post("/models")
 	if err != nil {
 		return nil, err
 	}
@@ -154,11 +154,11 @@ func (c *Client) Delete(ctx context.Context, id string) error {
 		SetContext(ctx).
 		SetPathParam("id", id)
 
-	rsp, err := req.Delete("/api/public/models/{id}")
+	rsp, err := req.Delete("/models/{id}")
 	if err != nil {
 		return err
 	}
-	if rsp.StatusCode() != http.StatusNoContent {
+	if rsp.StatusCode() != http.StatusOK {
 		return fmt.Errorf("delete model failed with status code %d", rsp.StatusCode())
 	}
 	return nil

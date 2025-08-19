@@ -179,7 +179,7 @@ func TestClient_CreateConfig(t *testing.T) {
 
 	t.Run("successful create numeric config", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/api/public/score-configs", r.URL.Path)
+			require.Equal(t, "/score-configs", r.URL.Path)
 			require.Equal(t, "POST", r.Method)
 
 			var createReq CreateScoreConfigRequest
@@ -249,7 +249,7 @@ func TestClient_ListConfigs(t *testing.T) {
 
 	t.Run("successful list configs", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/api/public/score-configs", r.URL.Path)
+			require.Equal(t, "/score-configs", r.URL.Path)
 			require.Equal(t, "GET", r.Method)
 
 			configs := ListScoreConfigs{
@@ -295,7 +295,7 @@ func TestClient_GetConfig(t *testing.T) {
 	t.Run("successful get config", func(t *testing.T) {
 		configID := "config-123"
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			require.Equal(t, "/api/public/score-configs/"+configID, r.URL.Path)
+			require.Equal(t, "/score-configs/"+configID, r.URL.Path)
 			require.Equal(t, "GET", r.Method)
 
 			config := ScoreConfig{
