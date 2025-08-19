@@ -48,6 +48,13 @@ func runTraceTests(client *langfuse.LangFuse) {
 	span := trace.StartSpan("Test Span")
 	span.Input = map[string]string{"span_input": "Processing data..."}
 	span.Output = map[string]string{"span_output": "Data processed successfully!"}
+
+	// nested span
+	childSpan := trace.StartSpan("Test ChildSpan")
+	childSpan.Input = map[string]string{"child_input": "Child span processing"}
+	childSpan.Output = map[string]string{"child_output": "Child span processed!"}
+	childSpan.End()
+
 	span.End()
 
 	trace.End()

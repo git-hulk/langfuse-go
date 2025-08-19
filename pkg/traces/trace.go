@@ -63,6 +63,18 @@ func (t *Trace) End() {
 	}
 }
 
+func (t *Trace) getParentObservationID() string {
+	if len(t.observations) == 0 {
+		return t.ID // If no observations, use trace ID as parent
+	}
+
+	lastObservation := t.observations[len(t.observations)-1]
+	if lastObservation.EndTime.IsZero() {
+		return lastObservation.ID // Use last observation ID if it's still active
+	}
+	return lastObservation.ParentObservationID // Use parent observation ID of the last observation
+}
+
 // StartSpan creates a new child observation (span) within this trace.
 //
 // The span is automatically assigned a unique ID, set to span type, and linked
@@ -74,7 +86,7 @@ func (t *Trace) StartSpan(name string) *Observation {
 		ID:                  uuid.Must(uuid.NewV4()).String(),
 		Name:                name,
 		Type:                ObservationTypeSpan,
-		ParentObservationID: t.ID,
+		ParentObservationID: t.getParentObservationID(),
 		StartTime:           time.Now(),
 	}
 	t.observations = append(t.observations, observation)

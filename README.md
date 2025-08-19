@@ -46,7 +46,9 @@ func main() {
     span := trace.StartSpan("processing-step")
     
     // Your application logic here...
-    
+    nestedSpan  := span.StartSpan("nested-processing") 
+	nestedSpan.End()
+	
     span.End()
     trace.End()
 }
