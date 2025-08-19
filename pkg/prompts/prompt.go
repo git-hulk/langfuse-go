@@ -1,3 +1,8 @@
+// Package prompts provides functionality for managing prompt templates and versions in Langfuse.
+//
+// This package allows you to create, retrieve, list, and manage prompt templates
+// for your AI applications. Prompts can contain placeholders and support versioning
+// for iterative development and A/B testing of prompt variations.
 package prompts
 
 import (
@@ -13,7 +18,11 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// ChatMessageWithPlaceHolder represents a chat message that can include placeholders.
+// ChatMessageWithPlaceHolder represents a chat message that can include placeholders for dynamic content.
+//
+// Placeholders in the content can be replaced with actual values when using the prompt.
+// The Role field specifies the message role (e.g., "system", "user", "assistant"),
+// Type specifies the content type, and Content contains the message text with optional placeholders.
 type ChatMessageWithPlaceHolder struct {
 	Role    string `json:"role"`
 	Type    string `json:"type"`
@@ -30,7 +39,11 @@ func (c *ChatMessageWithPlaceHolder) validate() error {
 	return nil
 }
 
-// PromptEntry represents a Langfuse prompt with its configuration and messages.
+// PromptEntry represents a complete prompt template with its configuration and messages.
+//
+// A prompt entry contains the prompt name, an array of chat messages with placeholders,
+// type information, version number, and optional metadata like tags and labels.
+// The Config field can contain model-specific configuration parameters.
 type PromptEntry struct {
 	Name    string                       `json:"name"`
 	Prompt  []ChatMessageWithPlaceHolder `json:"prompt"`
@@ -56,7 +69,10 @@ func (p *PromptEntry) validate() error {
 	return nil
 }
 
-// ListParams defines the query parameters for listing prompts.
+// ListParams defines the query parameters for filtering and paginating prompt listings.
+//
+// Use these parameters to filter prompts by name, labels, tags, and update timestamps,
+// as well as to control pagination with Page and Limit fields.
 type ListParams struct {
 	Name          string
 	Label         string
@@ -95,22 +111,35 @@ func (query *ListParams) ToQueryString() string {
 	return strings.Join(parts, "&")
 }
 
-// GetParams defines the parameters for retrieving a single prompt.
+// GetParams defines the parameters for retrieving a specific prompt.
+//
+// Use Name to specify the prompt name, Label for a specific label,
+// and Version for a specific version. If Version is 0, the latest version is returned.
 type GetParams struct {
 	Name    string
 	Label   string
 	Version int
 }
 
+// ListPrompts represents the response structure for prompt listing operations.
+//
+// It contains pagination metadata and an array of prompt entries matching the query parameters.
 type ListPrompts struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     []PromptEntry       `json:"data"`
 }
 
+// Client provides methods for interacting with the Langfuse prompts API.
+//
+// The client handles HTTP communication with the Langfuse API for prompt management
+// operations including creating, retrieving, and listing prompt templates.
 type Client struct {
 	restyCli *resty.Client
 }
 
+// NewClient creates a new prompts client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }

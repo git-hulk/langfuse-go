@@ -1,3 +1,8 @@
+// Package sessions provides functionality for managing user sessions and their associated traces in Langfuse.
+//
+// This package allows you to retrieve and analyze user sessions, including
+// filtering by time ranges and environments. Sessions group related traces
+// together representing user interactions or workflows.
 package sessions
 
 import (
@@ -15,7 +20,11 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// Session represents a Langfuse session.
+// Session represents a user session in Langfuse.
+//
+// A session groups related traces together, typically representing
+// a user interaction session or a related workflow. Sessions can be
+// filtered by environment and time ranges.
 type Session struct {
 	ID          string    `json:"id"`
 	CreatedAt   time.Time `json:"createdAt"`
@@ -23,13 +32,20 @@ type Session struct {
 	Environment string    `json:"environment,omitempty"`
 }
 
-// SessionWithTraces represents a session with its associated traces.
+// SessionWithTraces represents a complete session including all its associated traces.
+//
+// This structure embeds the Session and includes an array of all traces
+// that belong to this session, providing a complete view of the session's activity.
 type SessionWithTraces struct {
 	Session
 	Traces []traces.TraceEntry `json:"traces"`
 }
 
-// ListParams defines the query parameters for listing sessions.
+// ListParams defines the query parameters for filtering and paginating session listings.
+//
+// Use FromTimestamp and ToTimestamp to filter sessions by creation time.
+// Environment can filter sessions by specific environments.
+// Page and Limit control pagination.
 type ListParams struct {
 	Page          int
 	Limit         int
@@ -65,18 +81,25 @@ func (p *ListParams) ToQueryString() string {
 	return strings.Join(parts, "&")
 }
 
-// ListSessions represents the response from listing sessions.
+// ListSessions represents the paginated response from the list sessions API.
+//
+// It contains pagination metadata and an array of sessions matching the query criteria.
 type ListSessions struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     []Session           `json:"data"`
 }
 
-// Client represents the sessions API client.
+// Client provides methods for interacting with the Langfuse sessions API.
+//
+// The client handles HTTP communication for session-related operations
+// including retrieving individual sessions and listing sessions with filtering.
 type Client struct {
 	restyCli *resty.Client
 }
 
-// NewClient creates a new sessions API client.
+// NewClient creates a new sessions client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }

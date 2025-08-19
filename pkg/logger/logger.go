@@ -14,7 +14,9 @@ var (
 	once         sync.Once
 )
 
-// Config holds the logger configuration options
+// Config holds the logger configuration options for customizing log output.
+//
+// Use DefaultConfig() to get sensible defaults, then modify specific fields as needed.
 type Config struct {
 	Level      zapcore.Level
 	Encoding   string
@@ -22,7 +24,10 @@ type Config struct {
 	ErrorPath  string
 }
 
-// DefaultConfig returns a default production-ready logger configuration
+// DefaultConfig returns a default production-ready logger configuration.
+//
+// The default configuration uses JSON encoding, info level logging,
+// and outputs to stdout with errors to stderr.
 func DefaultConfig() Config {
 	return Config{
 		Level:      zapcore.InfoLevel,

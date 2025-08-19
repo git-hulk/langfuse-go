@@ -1,3 +1,11 @@
+// Package batch provides a generic, type-safe batch processor for efficient API ingestion.
+//
+// The processor buffers incoming records in a channel-based queue and batches them
+// by size or time interval. It uses configurable worker goroutines for parallel
+// processing and provides graceful shutdown with timeout handling.
+//
+// The batch processor is designed to work with any type implementing the Sender[T] interface,
+// making it reusable across different API endpoints and data types.
 package batch
 
 import (
@@ -18,6 +26,11 @@ var (
 	ErrShutdownTimeout = errors.New("shutdown timeout exceeded")
 )
 
+// Sender defines the interface for sending batched records to an external service.
+//
+// Implementations should handle the actual HTTP requests or other transport mechanisms
+// to deliver the batched records. The Send method receives a context for cancellation
+// and a slice of records to be sent as a batch.
 type Sender[T any] interface {
 	Send(ctx context.Context, records []T) error
 }
@@ -72,8 +85,14 @@ func defaultConfig() *Config {
 	}
 }
 
-// Processor is a batch processor that collects records and sends them in batches
-// using the provided Sender interface. It supports concurrent processing with multiple workers.
+// Processor is a generic, type-safe batch processor that efficiently collects and sends records.
+//
+// The processor uses a channel-based architecture with configurable batching by size and time.
+// It supports multiple worker goroutines for parallel processing and provides graceful shutdown
+// with timeout handling. Records are buffered in memory and automatically flushed when batch
+// size limits are reached or flush intervals expire.
+//
+// The processor is thread-safe and can be used concurrently from multiple goroutines.
 type Processor[T any] struct {
 	config  *Config
 	sender  Sender[T]
@@ -88,7 +107,19 @@ type Processor[T any] struct {
 
 type applyOption func(*Config)
 
-// NewProcessor creates a new Processor instance with the provided Sender.
+// NewProcessor creates a new Processor instance with the provided Sender and optional configuration.
+//
+// The processor is immediately started with the configured number of worker goroutines.
+// Use the provided With* option functions to customize batch size, flush interval,
+// buffer size, number of workers, and shutdown timeout.
+//
+// Example:
+//
+//	processor := NewProcessor(sender,
+//		WithMaxBatchSize(50),
+//		WithFlushInterval(5*time.Second),
+//		WithNumWorkers(2),
+//	)
 func NewProcessor[T any](sender Sender[T], options ...applyOption) *Processor[T] {
 	config := defaultConfig()
 	for _, opt := range options {
@@ -115,30 +146,40 @@ func NewProcessor[T any](sender Sender[T], options ...applyOption) *Processor[T]
 	return p
 }
 
+// WithMaxBatchSize sets the maximum number of records to send in a single batch.
+// Default is 100 records per batch.
 func WithMaxBatchSize(maxBatchSize int) applyOption {
 	return func(c *Config) {
 		c.MaxBatchSize = maxBatchSize
 	}
 }
 
+// WithFlushInterval sets the time interval for automatic batch flushing.
+// Batches will be sent after this interval even if not full. Default is 3 seconds.
 func WithFlushInterval(flushInterval time.Duration) applyOption {
 	return func(c *Config) {
 		c.FlushInterval = flushInterval
 	}
 }
 
+// WithBufferSize sets the size of the internal record buffer.
+// If the buffer is full, Submit will return an error. Default is 1000 records.
 func WithBufferSize(bufferSize int) applyOption {
 	return func(c *Config) {
 		c.BufferSize = bufferSize
 	}
 }
 
+// WithNumWorkers sets the number of worker goroutines for processing batches.
+// More workers enable higher concurrency but use more resources. Default is 1.
 func WithNumWorkers(numWorkers int) applyOption {
 	return func(c *Config) {
 		c.NumWorkers = numWorkers
 	}
 }
 
+// WithShutdownTimeout sets the maximum time to wait for graceful shutdown.
+// If the processor doesn't shut down within this time, an error is returned. Default is 30 seconds.
 func WithShutdownTimeout(shutdownTimeout time.Duration) applyOption {
 	return func(c *Config) {
 		c.ShutdownTimeout = shutdownTimeout

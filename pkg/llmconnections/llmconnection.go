@@ -1,3 +1,8 @@
+// Package llmconnections provides functionality for managing LLM provider connections in Langfuse.
+//
+// This package allows you to configure connections to various LLM providers
+// like OpenAI, Anthropic, Azure OpenAI, AWS Bedrock, and Google Vertex AI.
+// Connections can be configured with custom models, base URLs, and additional headers.
 package llmconnections
 
 import (
@@ -15,7 +20,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// LLMAdapter represents the supported LLM adapters.
+// LLMAdapter represents the type of LLM provider adapter.
+//
+// Each adapter corresponds to a specific LLM provider and defines
+// how to interact with that provider's API endpoints.
 type LLMAdapter string
 
 const (
@@ -27,7 +35,11 @@ const (
 	AdapterGoogleAIStudio LLMAdapter = "google-ai-studio"
 )
 
-// LLMConnection represents an LLM API connection configuration (secrets excluded).
+// LLMConnection represents a configured connection to an LLM provider.
+//
+// The connection contains provider-specific configuration including custom models,
+// base URLs, and metadata. Sensitive information like API keys is excluded
+// from this structure for security reasons.
 type LLMConnection struct {
 	ID                string     `json:"id"`
 	Provider          string     `json:"provider"`
@@ -41,7 +53,11 @@ type LLMConnection struct {
 	UpdatedAt         time.Time  `json:"updatedAt"`
 }
 
-// UpsertLLMConnectionRequest represents a request to create or update an LLM connection.
+// UpsertLLMConnectionRequest represents the parameters for creating or updating an LLM connection.
+//
+// Provider, Adapter, and SecretKey are required fields. BaseURL is required for some adapters
+// like Azure. CustomModels can specify additional models beyond the defaults.
+// WithDefaultModels controls whether to include provider's default models.
 type UpsertLLMConnectionRequest struct {
 	Provider          string            `json:"provider"`
 	Adapter           LLMAdapter        `json:"adapter"`
@@ -92,18 +108,25 @@ func (query *ListParams) ToQueryString() string {
 	return strings.Join(parts, "&")
 }
 
-// ListLLMConnections represents the response from listing LLM connections.
+// ListLLMConnections represents the paginated response from the list LLM connections API.
+//
+// It contains pagination metadata and an array of LLM connections matching the query criteria.
 type ListLLMConnections struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     []LLMConnection     `json:"data"`
 }
 
-// Client represents the LLM connections API client.
+// Client provides methods for interacting with the Langfuse LLM connections API.
+//
+// The client handles HTTP communication for LLM connection operations
+// including creating, updating, and listing provider connections.
 type Client struct {
 	restyCli *resty.Client
 }
 
-// NewClient creates a new LLM connections API client.
+// NewClient creates a new LLM connections client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }

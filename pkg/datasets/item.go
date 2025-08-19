@@ -11,7 +11,11 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/common"
 )
 
-// DatasetItem represents a Langfuse dataset item.
+// DatasetItem represents an individual item within a dataset.
+//
+// Dataset items contain input/output pairs for training or evaluation,
+// along with metadata and optional links to source traces or observations.
+// Items can have various statuses and are timestamped for audit purposes.
 type DatasetItem struct {
 	ID                  string    `json:"id,omitempty"`
 	DatasetID           string    `json:"datasetId,omitempty"`
@@ -26,7 +30,11 @@ type DatasetItem struct {
 	UpdatedAt           time.Time `json:"updatedAt,omitempty"`
 }
 
-// CreateDatasetItemRequest represents the request to create a dataset item.
+// CreateDatasetItemRequest represents the parameters for creating a new dataset item.
+//
+// The DatasetName is required to specify which dataset the item belongs to.
+// Input and ExpectedOutput contain the training/evaluation data pairs.
+// Optional fields include metadata and source trace/observation references.
 type CreateDatasetItemRequest struct {
 	DatasetName         string `json:"datasetName"`
 	Input               any    `json:"input,omitempty"`
@@ -45,7 +53,10 @@ func (c *CreateDatasetItemRequest) validate() error {
 	return nil
 }
 
-// UpdateDatasetItemRequest represents the request to update a dataset item.
+// UpdateDatasetItemRequest represents the parameters for updating an existing dataset item.
+//
+// All fields are optional and only non-zero values will be updated.
+// Use this to modify input/output data, metadata, or source references.
 type UpdateDatasetItemRequest struct {
 	Input               any    `json:"input,omitempty"`
 	ExpectedOutput      any    `json:"expectedOutput,omitempty"`
@@ -55,7 +66,11 @@ type UpdateDatasetItemRequest struct {
 	Status              string `json:"status,omitempty"`
 }
 
-// ListDatasetItemParams defines the query parameters for listing dataset items.
+// ListDatasetItemParams defines the query parameters for filtering and paginating dataset items.
+//
+// Use DatasetName to specify which dataset to list items from (required).
+// Optional filters include SourceTraceID and SourceObservationID for items linked to specific traces.
+// Page and Limit control pagination.
 type ListDatasetItemParams struct {
 	DatasetName         string
 	SourceTraceID       string
@@ -85,7 +100,9 @@ func (query *ListDatasetItemParams) ToQueryString() string {
 	return strings.Join(parts, "&")
 }
 
-// ListDatasetItems represents the response from listing dataset items.
+// ListDatasetItems represents the paginated response from the list dataset items API.
+//
+// It contains pagination metadata and an array of dataset items matching the query criteria.
 type ListDatasetItems struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     []DatasetItem       `json:"data"`

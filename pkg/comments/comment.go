@@ -1,3 +1,8 @@
+// Package comments provides functionality for managing comments on traces, observations, and sessions in Langfuse.
+//
+// This package allows you to add contextual comments to your traces and observations
+// for collaboration and debugging purposes. Comments can be attached to various
+// object types including traces, observations, sessions, and prompts.
 package comments
 
 import (
@@ -13,7 +18,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// CommentObjectType represents the type of object that can have comments.
+// CommentObjectType represents the type of object that can have comments attached.
+//
+// Comments can be attached to different types of objects in Langfuse,
+// including traces, observations, sessions, and prompts.
 type CommentObjectType string
 
 const (
@@ -23,7 +31,11 @@ const (
 	ObjectTypePrompt      CommentObjectType = "prompt"
 )
 
-// CommentEntry represents a Langfuse comment.
+// CommentEntry represents a comment attached to an object in Langfuse.
+//
+// Comments provide a way to add contextual information, feedback, or notes
+// to traces, observations, sessions, or prompts. They include author information
+// and timestamps for collaboration and audit purposes.
 type CommentEntry struct {
 	ID           string            `json:"id,omitempty"`
 	ProjectID    string            `json:"projectId,omitempty"`
@@ -48,7 +60,10 @@ func (c *CommentEntry) validate() error {
 	return nil
 }
 
-// CreateCommentRequest represents the request to create a comment.
+// CreateCommentRequest represents the parameters for creating a new comment.
+//
+// ProjectID, ObjectType, ObjectID, and Content are required fields.
+// AuthorUserID is optional and will be set based on the API key if not provided.
 type CreateCommentRequest struct {
 	ProjectID    string            `json:"projectId,omitempty"`
 	ObjectType   CommentObjectType `json:"objectType"`
@@ -73,7 +88,10 @@ func (c *CreateCommentRequest) validate() error {
 	return nil
 }
 
-// ListParams defines the query parameters for listing comments.
+// ListParams defines the query parameters for filtering and paginating comment listings.
+//
+// Use ObjectType and ObjectID to filter comments for specific objects.
+// Page and Limit control pagination.
 type ListParams struct {
 	Page       int
 	Limit      int
@@ -99,18 +117,25 @@ func (query *ListParams) ToQueryString() string {
 	return strings.Join(parts, "&")
 }
 
-// ListComments represents the response from listing comments.
+// ListComments represents the paginated response from the list comments API.
+//
+// It contains pagination metadata and an array of comments matching the query criteria.
 type ListComments struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     []CommentEntry      `json:"data"`
 }
 
-// Client represents the comments API client.
+// Client provides methods for interacting with the Langfuse comments API.
+//
+// The client handles HTTP communication for comment-related operations
+// including creating, retrieving, and listing comments on various object types.
 type Client struct {
 	restyCli *resty.Client
 }
 
-// NewClient creates a new comments API client.
+// NewClient creates a new comments client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }

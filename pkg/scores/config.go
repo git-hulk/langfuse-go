@@ -11,13 +11,20 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/common"
 )
 
-// ConfigCategory represents a category configuration for categorical scores.
+// ConfigCategory represents a single category option for categorical score configurations.
+//
+// Each category has a numeric value and a human-readable label.
+// Categories define the allowed values for categorical scores.
 type ConfigCategory struct {
 	Value float64 `json:"value"`
 	Label string  `json:"label"`
 }
 
-// ScoreConfig represents a score configuration.
+// ScoreConfig represents a reusable configuration template for scores.
+//
+// Score configurations define the data type, valid value ranges (for numeric scores),
+// or category options (for categorical scores). They can be used to ensure
+// consistency when creating scores and provide validation rules.
 type ScoreConfig struct {
 	ID          string           `json:"id"`
 	Name        string           `json:"name"`
@@ -32,7 +39,10 @@ type ScoreConfig struct {
 	Description string           `json:"description,omitempty"`
 }
 
-// CreateScoreConfigRequest represents the request body for creating a score config.
+// CreateScoreConfigRequest represents the parameters for creating a new score configuration.
+//
+// For numeric scores, specify MinValue and MaxValue. For categorical scores,
+// provide a Categories array with value-label pairs. Boolean scores require no additional configuration.
 type CreateScoreConfigRequest struct {
 	Name        string           `json:"name"`
 	DataType    ScoreDataType    `json:"dataType"`
@@ -105,7 +115,9 @@ func (p *ConfigListParams) ToQueryString() string {
 	return strings.Join(parts, "&")
 }
 
-// ListScoreConfigs represents the response from listing score configs.
+// ListScoreConfigs represents the paginated response from the list score configs API.
+//
+// It contains pagination metadata and an array of score configurations matching the query criteria.
 type ListScoreConfigs struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     []ScoreConfig       `json:"data"`

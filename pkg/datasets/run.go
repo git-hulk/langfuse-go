@@ -9,7 +9,11 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/common"
 )
 
-// DatasetRun represents a dataset run.
+// DatasetRun represents an execution run against a dataset.
+//
+// A dataset run tracks the evaluation or processing of dataset items
+// in a specific experiment or evaluation session. It contains metadata
+// about the run and links to the associated dataset.
 type DatasetRun struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
@@ -21,7 +25,10 @@ type DatasetRun struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-// DatasetRunItem represents an item in a dataset run.
+// DatasetRunItem represents a single item within a dataset run.
+//
+// Each run item links a specific dataset item to a trace that was generated
+// during the run, enabling tracking of how each dataset item was processed.
 type DatasetRunItem struct {
 	ID             string    `json:"id"`
 	DatasetRunID   string    `json:"datasetRunId"`
@@ -33,13 +40,18 @@ type DatasetRunItem struct {
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
-// DatasetRunWithItems represents a dataset run with its associated items.
+// DatasetRunWithItems represents a complete dataset run including all its items.
+//
+// This structure embeds the DatasetRun and includes an array of all
+// DatasetRunItems that were processed during this run.
 type DatasetRunWithItems struct {
 	DatasetRun
 	DatasetRunItems []DatasetRunItem `json:"datasetRunItems"`
 }
 
-// ListDatasetRuns represents the response from listing dataset runs.
+// ListDatasetRuns represents the paginated response from the list dataset runs API.
+//
+// It contains pagination metadata and an array of dataset runs matching the query criteria.
 type ListDatasetRuns struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     []DatasetRun        `json:"data"`

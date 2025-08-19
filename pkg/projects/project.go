@@ -1,3 +1,8 @@
+// Package projects provides functionality for managing projects and API keys in Langfuse.
+//
+// This package allows you to create, update, and manage projects, as well as
+// manage API keys within projects. Most operations require organization-scoped API keys.
+// Projects contain traces, datasets, and other Langfuse resources.
 package projects
 
 import (
@@ -9,7 +14,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// Project represents a Langfuse project.
+// Project represents a Langfuse project with its configuration and metadata.
+//
+// Projects are containers for traces, datasets, prompts, and other Langfuse resources.
+// They can have custom metadata and data retention policies.
 type Project struct {
 	ID            string                 `json:"id,omitempty"`
 	Name          string                 `json:"name"`
@@ -17,14 +25,19 @@ type Project struct {
 	RetentionDays *int                   `json:"retentionDays,omitempty"`
 }
 
-// CreateProjectRequest represents the request payload for creating a project.
+// CreateProjectRequest represents the parameters for creating a new project.
+//
+// Name is required. Metadata can contain custom key-value pairs.
+// Retention specifies the data retention period in days.
 type CreateProjectRequest struct {
 	Name      string                 `json:"name"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 	Retention int                    `json:"retention"`
 }
 
-// UpdateProjectRequest represents the request payload for updating a project.
+// UpdateProjectRequest represents the parameters for updating an existing project.
+//
+// All fields are optional and only provided fields will be updated.
 type UpdateProjectRequest struct {
 	Name      string                 `json:"name"`
 	Metadata  map[string]interface{} `json:"metadata,omitempty"`
@@ -92,12 +105,17 @@ func (req *UpdateProjectRequest) validate() error {
 	return nil
 }
 
-// Client represents the projects API client.
+// Client provides methods for interacting with the Langfuse projects API.
+//
+// The client handles HTTP communication for project management operations
+// including creating, updating, deleting projects, and managing API keys.
 type Client struct {
 	restyCli *resty.Client
 }
 
-// NewClient creates a new projects API client.
+// NewClient creates a new projects client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }

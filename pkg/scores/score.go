@@ -1,3 +1,9 @@
+// Package scores provides functionality for managing evaluation scores and score configurations in Langfuse.
+//
+// This package allows you to create, retrieve, and manage scores for your traces
+// and observations, including score configurations for different data types.
+// Scores can be numeric, boolean, or categorical and come from various sources
+// including manual annotations, API calls, or automated evaluations.
 package scores
 
 import (
@@ -15,7 +21,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// ScoreSource represents the source of a score.
+// ScoreSource represents the origin or source of a score.
+//
+// Scores can originate from different sources such as manual annotations,
+// API calls, or automated evaluations, which helps track how scores were generated.
 type ScoreSource string
 
 const (
@@ -24,7 +33,10 @@ const (
 	ScoreSourceEval       ScoreSource = "EVAL"
 )
 
-// ScoreDataType represents the data type of score.
+// ScoreDataType represents the data type and format of a score value.
+//
+// Scores can be numeric (float values), boolean (true/false), or categorical
+// (predefined categories with associated values).
 type ScoreDataType string
 
 const (
@@ -33,6 +45,11 @@ const (
 	ScoreDataTypeCategorical ScoreDataType = "CATEGORICAL"
 )
 
+// Score represents an evaluation score attached to a trace, observation, or session.
+//
+// Scores are used to evaluate the quality, performance, or other metrics of AI outputs.
+// They can be attached to traces, observations, sessions, or dataset runs and include
+// metadata about the source, author, and optional comments explaining the score.
 type Score struct {
 	DataType      ScoreDataType     `json:"dataType"`
 	Value         float64           `json:"value"`
@@ -54,7 +71,11 @@ type Score struct {
 	Trace         traces.TraceEntry `json:"trace,omitempty"`
 }
 
-// CreateScoreRequest represents the request body for creating a score.
+// CreateScoreRequest represents the parameters for creating a new score.
+//
+// At least one of TraceID, SessionID, or ObservationID must be provided to specify
+// what the score is attached to. The Value field can be a float64 for numeric scores
+// or a string for categorical/boolean scores.
 type CreateScoreRequest struct {
 	ID            string        `json:"id,omitempty"`
 	TraceID       string        `json:"traceId,omitempty"`
@@ -85,11 +106,17 @@ func (r *CreateScoreRequest) validate() error {
 }
 
 // CreateScoreResponse represents the response from creating a score.
+//
+// It contains the ID of the newly created score for reference.
 type CreateScoreResponse struct {
 	ID string `json:"id"`
 }
 
-// ListParams defines the query parameters for listing scores.
+// ListParams defines the query parameters for filtering and paginating score listings.
+//
+// Use Name to filter scores by name, UserID to filter by author, and timestamp fields
+// to filter by creation time. Source and DataType can filter by score characteristics.
+// Page and Limit control pagination.
 type ListParams struct {
 	Page          int
 	Limit         int
@@ -169,18 +196,26 @@ func (p *ListParams) ToQueryString() string {
 	return strings.Join(parts, "&")
 }
 
-// ListScores represents the response from listing scores.
+// ListScores represents the paginated response from the list scores API.
+//
+// It contains pagination metadata and an array of scores matching the query criteria.
 type ListScores struct {
 	Metadata common.ListMetadata `json:"meta"`
 	Data     []Score             `json:"data"`
 }
 
-// Client represents the scores API client.
+// Client provides methods for interacting with the Langfuse scores API.
+//
+// The client handles HTTP communication for score-related operations
+// including creating, retrieving, listing, and deleting scores, as well as
+// managing score configurations.
 type Client struct {
 	restyCli *resty.Client
 }
 
-// NewClient creates a new scores API client.
+// NewClient creates a new scores client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }

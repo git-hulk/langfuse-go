@@ -1,3 +1,8 @@
+// Package annotations provides functionality for managing annotation queues and items in Langfuse.
+//
+// This package implements queue-based annotation workflows where items (traces, observations)
+// can be queued for manual annotation and scoring. Annotation queues can be configured
+// with specific score configurations and assigned to users for processing.
 package annotations
 
 import (
@@ -13,7 +18,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// Queue represents an annotation queue.
+// Queue represents an annotation queue for organizing items that need manual annotation.
+//
+// Annotation queues contain items (traces or observations) that are pending annotation.
+// They can be configured with specific score configurations and assigned to users.
 type Queue struct {
 	ID             string    `json:"id"`
 	Name           string    `json:"name"`
@@ -23,7 +31,10 @@ type Queue struct {
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
-// CreateQueueRequest represents the request payload for creating an annotation queue.
+// CreateQueueRequest represents the parameters for creating a new annotation queue.
+//
+// Name is required. ScoreConfigIDs specify which score configurations
+// are available for annotation within this queue.
 type CreateQueueRequest struct {
 	Name           string   `json:"name"`
 	Description    string   `json:"description,omitempty"`
@@ -88,12 +99,17 @@ type DeleteAssignmentResponse struct {
 	Success bool `json:"success"`
 }
 
-// QueueClient represents the annotation queues API client.
+// QueueClient provides methods for interacting with annotation queues in Langfuse.
+//
+// The client handles HTTP communication for queue management operations
+// including creating, retrieving, listing queues, and managing queue assignments.
 type QueueClient struct {
 	restyCli *resty.Client
 }
 
-// NewQueueClient creates a new annotation queues API client.
+// NewQueueClient creates a new annotation queue client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewQueueClient(cli *resty.Client) *QueueClient {
 	return &QueueClient{restyCli: cli}
 }

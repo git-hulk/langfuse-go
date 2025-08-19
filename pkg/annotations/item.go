@@ -13,7 +13,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// QueueStatus represents the status of an annotation queue item.
+// QueueStatus represents the processing status of an item in an annotation queue.
+//
+// Items start as PENDING when added to a queue and become COMPLETED
+// when annotation work is finished.
 type QueueStatus string
 
 const (
@@ -21,7 +24,10 @@ const (
 	StatusCompleted QueueStatus = "COMPLETED"
 )
 
-// QueueObjectType represents the type of object in an annotation queue.
+// QueueObjectType represents the type of object that can be queued for annotation.
+//
+// Currently supports traces and observations as the object types
+// that can be added to annotation queues.
 type QueueObjectType string
 
 const (
@@ -111,11 +117,17 @@ type DeleteItemResponse struct {
 }
 
 // ItemClient represents the annotation queue items API client.
+// ItemClient provides methods for interacting with annotation queue items in Langfuse.
+//
+// The client handles HTTP communication for item management operations
+// including creating, retrieving, updating, and deleting items within annotation queues.
 type ItemClient struct {
 	restyCli *resty.Client
 }
 
-// NewItemClient creates a new annotation queue items API client.
+// NewItemClient creates a new annotation queue item client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewItemClient(cli *resty.Client) *ItemClient {
 	return &ItemClient{restyCli: cli}
 }

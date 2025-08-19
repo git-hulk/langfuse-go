@@ -1,3 +1,8 @@
+// Package models provides functionality for managing model configurations and pricing in Langfuse.
+//
+// This package allows you to define model pricing, match patterns, and manage
+// model metadata for cost tracking and analytics. Models can be configured with
+// different pricing structures and tokenization settings.
 package models
 
 import (
@@ -13,13 +18,20 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// TokenizerConfig represents configuration for tokenization.
+// TokenizerConfig represents configuration for tokenization behavior.
+//
+// This configuration defines how tokens are counted for specific operations
+// like name processing and message handling, affecting cost calculations.
 type TokenizerConfig struct {
 	TokensPerName    int `json:"tokensPerName,omitempty"`
 	TokensPerMessage int `json:"tokensPerMessage,omitempty"`
 }
 
-// ModelEntry represents a Langfuse model with its configuration and pricing.
+// ModelEntry represents a model configuration with pricing and metadata.
+//
+// A model entry defines how a model is identified (via name and match pattern),
+// its pricing structure for input/output tokens, and tokenization configuration.
+// Models are used for cost tracking and analytics in Langfuse.
 type ModelEntry struct {
 	ID              string          `json:"id,omitempty"`
 	ModelName       string          `json:"modelName"`

@@ -1,3 +1,8 @@
+// Package organizations provides functionality for managing organization and project memberships in Langfuse.
+//
+// This package allows you to manage user roles and permissions within organizations
+// and projects. Most operations require organization-scoped API keys and appropriate
+// permissions to modify membership settings.
 package organizations
 
 import (
@@ -8,7 +13,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// MembershipRole represents the role of a membership.
+// MembershipRole represents the permission level of a user within an organization or project.
+//
+// Roles define what actions a user can perform, with OWNER having the highest
+// privileges and VIEWER having read-only access.
 type MembershipRole string
 
 const (
@@ -18,7 +26,10 @@ const (
 	MembershipRoleViewer MembershipRole = "VIEWER"
 )
 
-// MembershipRequest represents a request to create or update a membership.
+// MembershipRequest represents the parameters for creating or updating a user's membership.
+//
+// Both UserID and Role are required fields. The Role determines the user's
+// permissions within the organization or project.
 type MembershipRequest struct {
 	UserID string         `json:"userId"`
 	Role   MembershipRole `json:"role"`
@@ -42,17 +53,24 @@ type MembershipResponse struct {
 	Name   string         `json:"name"`
 }
 
-// MembershipsResponse represents the response from listing memberships.
+// MembershipsResponse represents the response from listing organization or project memberships.
+//
+// It contains an array of membership entries with user information and roles.
 type MembershipsResponse struct {
 	Memberships []MembershipResponse `json:"memberships"`
 }
 
-// Client represents the organization memberships API client.
+// Client provides methods for interacting with the Langfuse organizations API.
+//
+// The client handles HTTP communication for membership management operations
+// including listing, creating, and updating user memberships in organizations and projects.
 type Client struct {
 	restyCli *resty.Client
 }
 
-// NewClient creates a new organization memberships API client.
+// NewClient creates a new organizations client with the provided HTTP client.
+//
+// The resty client should be pre-configured with authentication and base URL.
 func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }
