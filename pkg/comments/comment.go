@@ -58,11 +58,14 @@ type CreateCommentRequest struct {
 }
 
 func (c *CreateCommentRequest) validate() error {
+	if c.ProjectID == "" {
+		return errors.New("'projectID' is required")
+	}
 	if c.ObjectType == "" {
 		return errors.New("'objectType' is required")
 	}
 	if c.ObjectID == "" {
-		return errors.New("'objectId' is required")
+		return errors.New("'objectID' is required")
 	}
 	if c.Content == "" {
 		return errors.New("'content' is required")

@@ -1,6 +1,7 @@
 package langfuse
 
 import (
+	"github.com/git-hulk/langfuse-go/pkg/organizations"
 	"github.com/go-resty/resty/v2"
 
 	"github.com/git-hulk/langfuse-go/pkg/comments"
@@ -24,6 +25,7 @@ type LangFuse struct {
 	session       *sessions.Client
 	score         *scores.Client
 	llmConnection *llmconnections.Client
+	organization  *organizations.Client
 	restyCli      *resty.Client
 }
 
@@ -42,6 +44,7 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 		session:       sessions.NewClient(restyCli),
 		score:         scores.NewClient(restyCli),
 		llmConnection: llmconnections.NewClient(restyCli),
+		organization:  organizations.NewClient(restyCli),
 		restyCli:      restyCli,
 	}
 }
@@ -80,6 +83,10 @@ func (c *LangFuse) Scores() *scores.Client {
 
 func (c *LangFuse) LLMConnections() *llmconnections.Client {
 	return c.llmConnection
+}
+
+func (c *LangFuse) Organizations() *organizations.Client {
+	return c.organization
 }
 
 func (c *LangFuse) Close() error {

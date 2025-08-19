@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is the **langfuse-go** client library for interacting with the Langfuse platform. It provides Go bindings for tracing, prompt management, model management, scores, datasets, sessions, LLM connections, organizations, and annotations functionality.
+This is the **langfuse-go** client library for interacting with the Langfuse platform. It provides Go bindings for tracing, prompt management, model management, scores, datasets, sessions, LLM connections, organizations, comments, and annotations functionality.
 
 ## Key Architecture
 
@@ -23,6 +23,7 @@ The codebase follows a modular structure with clear separation of concerns:
 3. **Generic Batch Processor**: Type-safe buffering system with configurable batch sizes, flush intervals, and worker pools
 4. **Feature Clients**: Independent clients for each API area (prompts, models, scores, etc.) sharing HTTP configuration
 5. **Annotations System**: Queue-based annotation workflows with items and assignments
+6. **Comments System**: Contextual comments for traces, observations, and sessions
 
 ### Client Architecture Pattern
 
@@ -50,6 +51,7 @@ make test                    # Run all tests with race detector (-race -count=1)
 go test ./...               # Standard Go test runner  
 go test ./pkg/annotations/  # Test specific package
 go test -v ./pkg/traces/    # Verbose output for specific package
+go run integration/integration.go  # Run integration tests (requires env setup)
 ```
 
 ### Code Formatting
@@ -106,3 +108,23 @@ client := features.NewClient(restyCli)
 - Use `omitempty` for optional fields: `json:"field,omitempty"`
 - Match API field naming exactly in JSON tags
 - Use pointer types for truly optional fields that can be nil
+
+### Function and Method Patterns
+- Include context parameters for functions that perform I/O operations
+- Add proper documentation comments for exported functions
+- Always handle errors explicitly, never ignore them
+- Use error wrapping to provide context: `fmt.Errorf("failed to X: %w", err)`
+- Start error messages with lowercase letters
+
+### Struct and Interface Design
+- Generate structs with proper field tags for JSON
+- Use `any` instead of `interface{}` for generic types in Go 1.18+
+- Keep interfaces small and focused (Interface Segregation Principle)
+- Use descriptive names ending with "-er" when appropriate
+- Use pointer types for optional fields that can be nil
+
+### Constants and Naming
+- Use `Enabled` suffix for feature toggles: `CacheEnabled`, `LoggingEnabled`
+- Use `Is` prefix for state checks: `IsActive`, `IsValid`
+- Use ALL_CAPS with underscores for package-level constants
+- Group related constants in blocks

@@ -104,9 +104,7 @@ type GetParams struct {
 
 type ListPrompts struct {
 	Metadata common.ListMetadata `json:"meta"`
-	Data     struct {
-		Prompts []PromptEntry `json:"prompts"`
-	} `json:"data"`
+	Data     []PromptEntry       `json:"data"`
 }
 
 type Client struct {

@@ -18,7 +18,7 @@ type Queue struct {
 	ID             string    `json:"id"`
 	Name           string    `json:"name"`
 	Description    string    `json:"description,omitempty"`
-	ScoreConfigIDs []string  `json:"scoreConfigIDs"`
+	ScoreConfigIDs []string  `json:"scoreConfigIds"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
@@ -27,7 +27,7 @@ type Queue struct {
 type CreateQueueRequest struct {
 	Name           string   `json:"name"`
 	Description    string   `json:"description,omitempty"`
-	ScoreConfigIDs []string `json:"scoreConfigIDs"`
+	ScoreConfigIDs []string `json:"scoreConfigIds"`
 }
 
 func (r *CreateQueueRequest) validate() error {
@@ -35,7 +35,7 @@ func (r *CreateQueueRequest) validate() error {
 		return errors.New("'name' is required")
 	}
 	if len(r.ScoreConfigIDs) == 0 {
-		return errors.New("'scoreConfigIds' is required and cannot be empty")
+		return errors.New("'scoreConfigIDs' is required and cannot be empty")
 	}
 	return nil
 }
@@ -71,7 +71,7 @@ type AssignmentRequest struct {
 
 func (r *AssignmentRequest) validate() error {
 	if r.UserID == "" {
-		return errors.New("'userId' is required")
+		return errors.New("'userID' is required")
 	}
 	return nil
 }
@@ -155,8 +155,8 @@ func (c *QueueClient) Create(ctx context.Context, createRequest *CreateQueueRequ
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create annotation queue: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create annotation queue, got status code: %d",
+			rsp.StatusCode())
 	}
 	return &createdQueue, nil
 }
@@ -182,8 +182,8 @@ func (c *QueueClient) CreateAssignment(ctx context.Context, queueID string, requ
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create assignment: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create assignment, got status code: %d",
+			rsp.StatusCode())
 	}
 	return &assignmentResponse, nil
 }
@@ -209,8 +209,8 @@ func (c *QueueClient) DeleteAssignment(ctx context.Context, queueID string, requ
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to delete assignment: %s, got status code: %d",
-			rsp.String(), rsp.StatusCode())
+		return nil, fmt.Errorf("failed to delete assignment, got status code: %d",
+			rsp.StatusCode())
 	}
 	return &deleteResponse, nil
 }

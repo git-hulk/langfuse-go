@@ -85,10 +85,10 @@ func TestMembershipClient_GetOrganizationMemberships(t *testing.T) {
 	defer server.Close()
 
 	client := resty.New().SetBaseURL(server.URL)
-	membershipClient := NewMembershipClient(client)
+	membershipClient := NewClient(client)
 
 	ctx := context.Background()
-	memberships, err := membershipClient.GetOrganizationMemberships(ctx)
+	memberships, err := membershipClient.ListMemberships(ctx)
 
 	require.NoError(t, err)
 	require.NotNil(t, memberships)
@@ -123,7 +123,7 @@ func TestMembershipClient_UpdateOrganizationMembership(t *testing.T) {
 	defer server.Close()
 
 	client := resty.New().SetBaseURL(server.URL)
-	membershipClient := NewMembershipClient(client)
+	membershipClient := NewClient(client)
 
 	ctx := context.Background()
 	req := &MembershipRequest{
@@ -131,7 +131,7 @@ func TestMembershipClient_UpdateOrganizationMembership(t *testing.T) {
 		Role:   MembershipRoleAdmin,
 	}
 
-	membership, err := membershipClient.UpdateOrganizationMembership(ctx, req)
+	membership, err := membershipClient.UpdateMembership(ctx, req)
 
 	require.NoError(t, err)
 	require.NotNil(t, membership)
@@ -149,7 +149,7 @@ func TestMembershipClient_UpdateOrganizationMembership_ValidationError(t *testin
 	defer server.Close()
 
 	client := resty.New().SetBaseURL(server.URL)
-	membershipClient := NewMembershipClient(client)
+	membershipClient := NewClient(client)
 
 	ctx := context.Background()
 	req := &MembershipRequest{
@@ -157,7 +157,7 @@ func TestMembershipClient_UpdateOrganizationMembership_ValidationError(t *testin
 		// Missing UserID
 	}
 
-	membership, err := membershipClient.UpdateOrganizationMembership(ctx, req)
+	membership, err := membershipClient.UpdateMembership(ctx, req)
 
 	require.Error(t, err)
 	require.Nil(t, membership)
@@ -187,10 +187,10 @@ func TestMembershipClient_GetProjectMemberships(t *testing.T) {
 	defer server.Close()
 
 	client := resty.New().SetBaseURL(server.URL)
-	membershipClient := NewMembershipClient(client)
+	membershipClient := NewClient(client)
 
 	ctx := context.Background()
-	memberships, err := membershipClient.GetProjectMemberships(ctx, projectID)
+	memberships, err := membershipClient.ListProjectMemberships(ctx, projectID)
 
 	require.NoError(t, err)
 	require.NotNil(t, memberships)
@@ -207,10 +207,10 @@ func TestMembershipClient_GetProjectMemberships_EmptyProjectId(t *testing.T) {
 	defer server.Close()
 
 	client := resty.New().SetBaseURL(server.URL)
-	membershipClient := NewMembershipClient(client)
+	membershipClient := NewClient(client)
 
 	ctx := context.Background()
-	memberships, err := membershipClient.GetProjectMemberships(ctx, "")
+	memberships, err := membershipClient.ListProjectMemberships(ctx, "")
 
 	require.Error(t, err)
 	require.Nil(t, memberships)
@@ -242,7 +242,7 @@ func TestMembershipClient_UpdateProjectMembership(t *testing.T) {
 	defer server.Close()
 
 	client := resty.New().SetBaseURL(server.URL)
-	membershipClient := NewMembershipClient(client)
+	membershipClient := NewClient(client)
 
 	ctx := context.Background()
 	req := &MembershipRequest{
@@ -268,7 +268,7 @@ func TestMembershipClient_UpdateProjectMembership_EmptyProjectId(t *testing.T) {
 	defer server.Close()
 
 	client := resty.New().SetBaseURL(server.URL)
-	membershipClient := NewMembershipClient(client)
+	membershipClient := NewClient(client)
 
 	ctx := context.Background()
 	req := &MembershipRequest{

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -186,7 +185,7 @@ func (c *Client) Delete(ctx context.Context, projectID string) (*ProjectDeletion
 		return nil, err
 	}
 
-	if rsp.StatusCode() != http.StatusAccepted {
+	if rsp.IsError() {
 		return nil, fmt.Errorf("delete project failed with status code %d", rsp.StatusCode())
 	}
 	return &deleteResponse, nil

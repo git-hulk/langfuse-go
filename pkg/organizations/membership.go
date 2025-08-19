@@ -47,19 +47,19 @@ type MembershipsResponse struct {
 	Memberships []MembershipResponse `json:"memberships"`
 }
 
-// MembershipClient represents the organization memberships API client.
-type MembershipClient struct {
+// Client represents the organization memberships API client.
+type Client struct {
 	restyCli *resty.Client
 }
 
-// NewMembershipClient creates a new organization memberships API client.
-func NewMembershipClient(cli *resty.Client) *MembershipClient {
-	return &MembershipClient{restyCli: cli}
+// NewClient creates a new organization memberships API client.
+func NewClient(cli *resty.Client) *Client {
+	return &Client{restyCli: cli}
 }
 
-// GetOrganizationMemberships retrieves all memberships for the organization associated with the API key.
+// ListMemberships retrieves all memberships for the organization associated with the API key.
 // Requires organization-scoped API key.
-func (c *MembershipClient) GetOrganizationMemberships(ctx context.Context) (*MembershipsResponse, error) {
+func (c *Client) ListMemberships(ctx context.Context) (*MembershipsResponse, error) {
 	var memberships MembershipsResponse
 	rsp, err := c.restyCli.R().
 		SetContext(ctx).
@@ -75,9 +75,9 @@ func (c *MembershipClient) GetOrganizationMemberships(ctx context.Context) (*Mem
 	return &memberships, nil
 }
 
-// UpdateOrganizationMembership creates or updates a membership for the organization associated with the API key.
+// UpdateMembership creates or updates a membership for the organization associated with the API key.
 // Requires organization-scoped API key.
-func (c *MembershipClient) UpdateOrganizationMembership(ctx context.Context, membership *MembershipRequest) (*MembershipResponse, error) {
+func (c *Client) UpdateMembership(ctx context.Context, membership *MembershipRequest) (*MembershipResponse, error) {
 	if err := membership.validate(); err != nil {
 		return nil, err
 	}
@@ -99,9 +99,9 @@ func (c *MembershipClient) UpdateOrganizationMembership(ctx context.Context, mem
 	return &updatedMembership, nil
 }
 
-// GetProjectMemberships retrieves all memberships for a specific project.
+// ListProjectMemberships retrieves all memberships for a specific project.
 // Requires organization-scoped API key.
-func (c *MembershipClient) GetProjectMemberships(ctx context.Context, projectId string) (*MembershipsResponse, error) {
+func (c *Client) ListProjectMemberships(ctx context.Context, projectId string) (*MembershipsResponse, error) {
 	if projectId == "" {
 		return nil, errors.New("'projectId' is required")
 	}
@@ -125,7 +125,7 @@ func (c *MembershipClient) GetProjectMemberships(ctx context.Context, projectId 
 // UpdateProjectMembership creates or updates a membership for a specific project.
 // The user must already be a member of the organization.
 // Requires organization-scoped API key.
-func (c *MembershipClient) UpdateProjectMembership(ctx context.Context, projectId string, membership *MembershipRequest) (*MembershipResponse, error) {
+func (c *Client) UpdateProjectMembership(ctx context.Context, projectId string, membership *MembershipRequest) (*MembershipResponse, error) {
 	if projectId == "" {
 		return nil, errors.New("'projectId' is required")
 	}

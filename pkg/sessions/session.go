@@ -109,9 +109,9 @@ func (c *Client) Get(ctx context.Context, sessionID string) (*SessionWithTraces,
 	req := c.restyCli.R().
 		SetContext(ctx).
 		SetResult(&session).
-		SetPathParam("sessionId", sessionID)
+		SetPathParam("sessionID", sessionID)
 
-	rsp, err := req.Get("/sessions/{sessionId}")
+	rsp, err := req.Get("/sessions/{sessionID}")
 	if err != nil {
 		return nil, err
 	}

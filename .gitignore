@@ -23,3 +23,5 @@ lint.log
 
 .vscode/
 .claude/
+
+integration/integration

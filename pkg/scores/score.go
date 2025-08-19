@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -214,9 +213,9 @@ func (c *Client) Get(ctx context.Context, scoreID string) (*Score, error) {
 	req := c.restyCli.R().
 		SetContext(ctx).
 		SetResult(&score).
-		SetPathParam("scoreId", scoreID)
+		SetPathParam("scoreID", scoreID)
 
-	rsp, err := req.Get("/v2/scores/{scoreId}")
+	rsp, err := req.Get("/v2/scores/{scoreID}")
 	if err != nil {
 		return nil, err
 	}
@@ -258,13 +257,13 @@ func (c *Client) Delete(ctx context.Context, scoreID string) error {
 
 	req := c.restyCli.R().
 		SetContext(ctx).
-		SetPathParam("scoreId", scoreID)
+		SetPathParam("scoreID", scoreID)
 
-	rsp, err := req.Delete("/scores/{scoreId}")
+	rsp, err := req.Delete("/scores/{scoreID}")
 	if err != nil {
 		return err
 	}
-	if rsp.StatusCode() != http.StatusNoContent {
+	if rsp.IsError() {
 		return fmt.Errorf("delete score failed with status code %d", rsp.StatusCode())
 	}
 	return nil
