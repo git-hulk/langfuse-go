@@ -64,6 +64,7 @@ func TestCreateCommentRequest_validate(t *testing.T) {
 		{
 			name: "valid request",
 			request: CreateCommentRequest{
+				ProjectID:  "project-123",
 				ObjectType: ObjectTypeTrace,
 				ObjectID:   "trace-123",
 				Content:    "This is a test comment",
@@ -73,14 +74,16 @@ func TestCreateCommentRequest_validate(t *testing.T) {
 		{
 			name: "missing object type",
 			request: CreateCommentRequest{
-				ObjectID: "trace-123",
-				Content:  "This is a test comment",
+				ProjectID: "project-123",
+				ObjectID:  "trace-123",
+				Content:   "This is a test comment",
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing object id",
 			request: CreateCommentRequest{
+				ProjectID:  "project-123",
 				ObjectType: ObjectTypeTrace,
 				Content:    "This is a test comment",
 			},
@@ -89,6 +92,7 @@ func TestCreateCommentRequest_validate(t *testing.T) {
 		{
 			name: "missing content",
 			request: CreateCommentRequest{
+				ProjectID:  "project-123",
 				ObjectType: ObjectTypeTrace,
 				ObjectID:   "trace-123",
 			},
@@ -211,6 +215,7 @@ func TestClientMethods(t *testing.T) {
 		}
 
 		validRequest := &CreateCommentRequest{
+			ProjectID:  "test-project",
 			ObjectType: ObjectTypeTrace,
 			ObjectID:   "trace-123",
 			Content:    "Test comment",

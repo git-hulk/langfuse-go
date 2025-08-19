@@ -53,7 +53,7 @@ func TestPromptClient_List(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			require.Equal(t, "/v2/prompts", r.URL.Path)
 			w.Header().Set("Content-Type", "application/json")
-			_, err := w.Write([]byte(`{"meta":{"page":1,"limit":10,"totalItems":1,"totalPages":1},"data":{"prompts":[{"name":"test-prompt"}]}}`))
+			_, err := w.Write([]byte(`{"meta":{"page":1,"limit":10,"totalItems":1,"totalPages":1},"data":[{"name":"test-prompt"}]}`))
 			require.NoError(t, err)
 		}))
 	defer server.Close()
@@ -62,8 +62,8 @@ func TestPromptClient_List(t *testing.T) {
 	client := NewClient(cli)
 	promptList, err := client.List(context.Background(), ListParams{})
 	require.NoError(t, err)
-	require.Len(t, promptList.Data.Prompts, 1)
-	require.Equal(t, "test-prompt", promptList.Data.Prompts[0].Name)
+	require.Len(t, promptList.Data, 1)
+	require.Equal(t, "test-prompt", promptList.Data[0].Name)
 	// verify meta
 	require.Equal(t, 1, promptList.Metadata.Page)
 	require.Equal(t, 10, promptList.Metadata.Limit)

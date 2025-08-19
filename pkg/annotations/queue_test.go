@@ -54,21 +54,21 @@ func TestCreateQueueRequest_validate(t *testing.T) {
 			"'name' is required",
 		},
 		{
-			"missing scoreConfigIds",
+			"missing scoreConfigIDs",
 			CreateQueueRequest{
 				Name: "test-queue",
 			},
 			true,
-			"'scoreConfigIds' is required",
+			"'scoreConfigIDs' is required",
 		},
 		{
-			"empty scoreConfigIds",
+			"empty scoreConfigIDs",
 			CreateQueueRequest{
 				Name:           "test-queue",
 				ScoreConfigIDs: []string{},
 			},
 			true,
-			"'scoreConfigIds' is required and cannot be empty",
+			"'scoreConfigIDs' is required and cannot be empty",
 		},
 	}
 	for _, tt := range tests {
@@ -98,10 +98,10 @@ func TestAssignmentRequest_validate(t *testing.T) {
 			"",
 		},
 		{
-			"missing userId",
+			"missing userID",
 			AssignmentRequest{},
 			true,
-			"'userId' is required",
+			"'userID' is required",
 		},
 	}
 	for _, tt := range tests {
@@ -293,5 +293,5 @@ func TestQueueClient_DeleteAssignment_ValidationError(t *testing.T) {
 	request := &AssignmentRequest{} // Missing required fields
 	_, err := client.DeleteAssignment(context.Background(), "test-queue-id", request)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "'userId' is required")
+	require.Contains(t, err.Error(), "'userID' is required")
 }
