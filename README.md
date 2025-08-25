@@ -4,9 +4,6 @@ Go client & SDK for interacting with [Langfuse](https://langfuse.com/). Provides
 
 ## Table of Contents
 
-- [Installation](#installation)
-- [Features](#features)
-- [Quick Start](#quick-start)
 - [API Reference](#api-reference)
   - [Core Observability](#core-observability)
     - [Tracing](#tracing)
@@ -24,35 +21,6 @@ Go client & SDK for interacting with [Langfuse](https://langfuse.com/). Provides
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
-
-## Quick Start
-
-```go
-package main
-
-import (
-    "context"
-    
-    langfuse "github.com/git-hulk/langfuse-go"
-)
-
-func main() {
-    // Initialize the client
-    client := langfuse.NewClient("YOUR_HOST", "YOUR_PUBLIC_KEY", "YOUR_PRIVATE_KEY")
-    defer client.Close() // Ensure all pending traces are flushed
-
-    // Start tracing
-    trace := client.StartTrace("my-application")
-    span := trace.StartSpan("processing-step")
-    
-    // Your application logic here...
-    nestedSpan  := span.StartSpan("nested-processing") 
-	nestedSpan.End()
-	
-    span.End()
-    trace.End()
-}
-```
 
 ## API Reference
 
@@ -73,7 +41,7 @@ func main() {
     langfuse := langfuse.NewClient("YOUR_HOST", "YOUR_PUBLIC_KEY", "YOUR_PRIVATE_KEY")
 
     ctx := context.Background()
-    trace := langfuse.StartTrace("it's a trace")
+    trace := langfuse.StartTrace(ctx, "it's a trace")
     span := trace.StartSpan("it's a span")
     span.End()
     trace.End()

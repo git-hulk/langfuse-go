@@ -169,7 +169,7 @@ func (ingestor *Ingestor) Send(ctx context.Context, traces []*Trace) error {
 	return nil
 }
 
-func (ingestor *Ingestor) StartTrace(name string) *Trace {
+func (ingestor *Ingestor) StartTrace(_ context.Context, name string) *Trace {
 	traceID := ingestor.idGenerator.GenerateTraceID().String()
 	return ingestor.withTraceID(traceID, name)
 }
