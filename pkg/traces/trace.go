@@ -8,7 +8,6 @@ package traces
 import (
 	"time"
 
-	"github.com/gofrs/uuid/v5"
 	"go.uber.org/zap"
 
 	"github.com/git-hulk/langfuse-go/pkg/logger"
@@ -81,9 +80,10 @@ func (t *Trace) getParentObservationID() string {
 // to this trace. The span's start time is set to the current time.
 // Returns an Observation that can be used to add data and end the span.
 func (t *Trace) StartSpan(name string) *Observation {
+	spanID := t.ingestor.idGenerator.GenerateSpanID().String()
 	observation := &Observation{
 		TraceID:             t.ID,
-		ID:                  uuid.Must(uuid.NewV4()).String(),
+		ID:                  spanID,
 		Name:                name,
 		Type:                ObservationTypeSpan,
 		ParentObservationID: t.getParentObservationID(),

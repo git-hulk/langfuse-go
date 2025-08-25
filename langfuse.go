@@ -17,8 +17,9 @@
 package langfuse
 
 import (
-	"github.com/git-hulk/langfuse-go/pkg/organizations"
 	"github.com/go-resty/resty/v2"
+
+	"github.com/git-hulk/langfuse-go/pkg/organizations"
 
 	"github.com/git-hulk/langfuse-go/pkg/comments"
 	"github.com/git-hulk/langfuse-go/pkg/datasets"
