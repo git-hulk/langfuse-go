@@ -39,7 +39,8 @@ func printInfo(format string, args ...interface{}) {
 }
 
 func runTraceTests(client *langfuse.LangFuse) {
-	trace := client.StartTrace("Test Trace")
+	ctx := context.Background()
+	trace := client.StartTrace(ctx, "Test Trace")
 	trace.Input = map[string]string{"input": "Test input"}
 	trace.Output = map[string]string{"output": "Test output"}
 	trace.Tags = []string{"test", "example"}
@@ -194,7 +195,7 @@ func runScoreTests(client *langfuse.LangFuse) {
 	fmt.Println("Testing Score API...")
 
 	// First create a trace to score against
-	trace := client.StartTrace("Score Test Trace")
+	trace := client.StartTrace(ctx, "Score Test Trace")
 	trace.Input = map[string]string{"query": "Test query for scoring"}
 	trace.Output = map[string]string{"response": "Test response"}
 	trace.End()
@@ -548,7 +549,7 @@ func runDatasetRunTests(client *langfuse.LangFuse) {
 	}
 
 	// Create a trace to link with the run
-	trace := client.StartTrace("Dataset Run Test Trace")
+	trace := client.StartTrace(ctx, "Dataset Run Test Trace")
 	trace.Input = map[string]string{"query": "Test query for run"}
 	trace.Output = map[string]string{"response": "Test response for run"}
 	trace.End()
@@ -884,7 +885,7 @@ func runCommentTests(client *langfuse.LangFuse) {
 	fmt.Println("Testing Comment API...")
 
 	// First, create a trace to comment on
-	trace := client.StartTrace("Comment Test Trace")
+	trace := client.StartTrace(ctx, "Comment Test Trace")
 	trace.Input = map[string]string{"query": "Test query for commenting"}
 	trace.Output = map[string]string{"response": "Test response for commenting"}
 	trace.End()
@@ -1093,7 +1094,7 @@ func runAnnotationTests(client *langfuse.LangFuse) {
 	}
 
 	// Create a trace to add to the annotation queue
-	trace := client.StartTrace("Annotation Test Trace")
+	trace := client.StartTrace(ctx, "Annotation Test Trace")
 	trace.Input = map[string]string{"query": "Test query for annotation"}
 	trace.Output = map[string]string{"response": "Test response for annotation"}
 	trace.End()

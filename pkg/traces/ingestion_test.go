@@ -135,6 +135,7 @@ func TestIDGenerator_Concurrency(t *testing.T) {
 }
 
 func TestIngestor_StartTrace(t *testing.T) {
+	ctx := context.Background()
 	logger := zaptest.NewLogger(t)
 	defer logger.Sync()
 
@@ -148,7 +149,7 @@ func TestIngestor_StartTrace(t *testing.T) {
 	client := resty.New().SetBaseURL(server.URL)
 	ingestor := NewIngestor(client)
 
-	trace := ingestor.StartTrace("test-trace")
+	trace := ingestor.StartTrace(ctx, "test-trace")
 
 	require.NotNil(t, trace)
 	require.Equal(t, "test-trace", trace.Name)
@@ -164,6 +165,7 @@ func TestIngestor_StartTrace(t *testing.T) {
 }
 
 func TestIngestor_StartTrace_UniqueIDs(t *testing.T) {
+	ctx := context.Background()
 	logger := zaptest.NewLogger(t)
 	defer logger.Sync()
 
@@ -180,7 +182,7 @@ func TestIngestor_StartTrace_UniqueIDs(t *testing.T) {
 	// Generate multiple traces and ensure unique IDs
 	traceIDs := make(map[string]bool)
 	for i := 0; i < 100; i++ {
-		trace := ingestor.StartTrace("test-trace")
+		trace := ingestor.StartTrace(ctx, "test-trace")
 		if traceIDs[trace.ID] {
 			logger.Error("found duplicate trace ID in ingestor test",
 				zap.String("id", trace.ID),

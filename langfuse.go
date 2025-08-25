@@ -17,6 +17,8 @@
 package langfuse
 
 import (
+	"context"
+
 	"github.com/go-resty/resty/v2"
 
 	"github.com/git-hulk/langfuse-go/pkg/organizations"
@@ -88,8 +90,8 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 // Langfuse for efficient ingestion.
 //
 // Returns a Trace instance that you can use to add observations and metadata.
-func (c *LangFuse) StartTrace(name string) *traces.Trace {
-	return c.ingestor.StartTrace(name)
+func (c *LangFuse) StartTrace(ctx context.Context, name string) *traces.Trace {
+	return c.ingestor.StartTrace(ctx, name)
 }
 
 // Prompts returns a client for managing prompt templates and versions.
