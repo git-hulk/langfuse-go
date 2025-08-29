@@ -128,7 +128,7 @@ func TestListParams_ToQueryString(t *testing.T) {
 				ObjectType: ObjectTypeTrace,
 				ObjectID:   "trace-123",
 			},
-			want: "page=1&limit=10&objectType=trace&objectId=trace-123",
+			want: "page=1&limit=10&objectType=TRACE&objectId=trace-123",
 		},
 		{
 			name: "partial params",
@@ -143,7 +143,7 @@ func TestListParams_ToQueryString(t *testing.T) {
 			params: ListParams{
 				ObjectType: ObjectTypeObservation,
 			},
-			want: "objectType=observation",
+			want: "objectType=OBSERVATION",
 		},
 	}
 
