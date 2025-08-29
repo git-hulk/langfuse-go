@@ -25,6 +25,7 @@ import (
 
 	"github.com/git-hulk/langfuse-go/pkg/comments"
 	"github.com/git-hulk/langfuse-go/pkg/datasets"
+	"github.com/git-hulk/langfuse-go/pkg/health"
 	"github.com/git-hulk/langfuse-go/pkg/llmconnections"
 	"github.com/git-hulk/langfuse-go/pkg/models"
 	"github.com/git-hulk/langfuse-go/pkg/projects"
@@ -53,6 +54,7 @@ type LangFuse struct {
 	score         *scores.Client
 	llmConnection *llmconnections.Client
 	organization  *organizations.Client
+	health        *health.Client
 	restyCli      *resty.Client
 }
 
@@ -79,6 +81,7 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 		score:         scores.NewClient(restyCli),
 		llmConnection: llmconnections.NewClient(restyCli),
 		organization:  organizations.NewClient(restyCli),
+		health:        health.NewClient(restyCli),
 		restyCli:      restyCli,
 	}
 }
@@ -164,6 +167,13 @@ func (c *LangFuse) LLMConnections() *llmconnections.Client {
 // and projects. Most operations require organization-scoped API keys.
 func (c *LangFuse) Organizations() *organizations.Client {
 	return c.organization
+}
+
+// Health returns a client for checking API health status and version.
+//
+// Use this client to verify connectivity and server status.
+func (c *LangFuse) Health() *health.Client {
+	return c.health
 }
 
 // Close gracefully shuts down the client and flushes all pending traces.

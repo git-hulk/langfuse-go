@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gofrs/uuid/v5"
+
 	"github.com/git-hulk/langfuse-go"
 	"github.com/git-hulk/langfuse-go/pkg/annotations"
 	"github.com/git-hulk/langfuse-go/pkg/comments"
@@ -40,25 +42,29 @@ func printInfo(format string, args ...interface{}) {
 
 func runTraceTests(client *langfuse.LangFuse) {
 	ctx := context.Background()
-	trace := client.StartTrace(ctx, "Test Trace")
-	trace.Input = map[string]string{"input": "Test input"}
-	trace.Output = map[string]string{"output": "Test output"}
-	trace.Tags = []string{"test", "example"}
+	sessionID := uuid.Must(uuid.NewV4())
+	for i := 0; i < 3; i++ {
+		trace := client.StartTrace(ctx, "Test Trace")
+		trace.Input = map[string]string{"input": "Test input"}
+		trace.Output = map[string]string{"output": "Test output"}
+		trace.Tags = []string{"test", "example"}
+		trace.SessionID = sessionID.String()
 
-	// Start a span within the trace
-	span := trace.StartSpan("Test Span")
-	span.Input = map[string]string{"span_input": "Processing data..."}
-	span.Output = map[string]string{"span_output": "Data processed successfully!"}
+		// Start a span within the trace
+		span := trace.StartSpan("Test Span")
+		span.Input = map[string]string{"span_input": "Processing data..."}
+		span.Output = map[string]string{"span_output": "Data processed successfully!"}
 
-	// nested span
-	childSpan := trace.StartSpan("Test ChildSpan")
-	childSpan.Input = map[string]string{"child_input": "Child span processing"}
-	childSpan.Output = map[string]string{"child_output": "Child span processed!"}
-	childSpan.End()
+		// nested span
+		childSpan := trace.StartSpan("Test ChildSpan")
+		childSpan.Input = map[string]string{"child_input": "Child span processing"}
+		childSpan.Output = map[string]string{"child_output": "Child span processed!"}
+		childSpan.End()
 
-	span.End()
+		span.End()
 
-	trace.End()
+		trace.End()
+	}
 }
 
 func runModelTests(client *langfuse.LangFuse) {
