@@ -109,7 +109,7 @@ func (query *ListParams) ToQueryString() string {
 		parts = append(parts, "limit="+strconv.Itoa(query.Limit))
 	}
 	if query.ObjectType != "" {
-		parts = append(parts, "objectType="+strings.ToLower(string(query.ObjectType)))
+		parts = append(parts, "objectType="+string(query.ObjectType))
 	}
 	if query.ObjectID != "" {
 		parts = append(parts, "objectId="+query.ObjectID)
