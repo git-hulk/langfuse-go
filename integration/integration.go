@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-resty/resty/v2"
-
 	"github.com/git-hulk/langfuse-go"
 	"github.com/git-hulk/langfuse-go/pkg/annotations"
 	"github.com/git-hulk/langfuse-go/pkg/comments"
@@ -18,6 +16,8 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/projects"
 	"github.com/git-hulk/langfuse-go/pkg/prompts"
 	"github.com/git-hulk/langfuse-go/pkg/scores"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // ANSI color codes
@@ -703,7 +703,12 @@ func runOrganizationTests(client *langfuse.LangFuse) {
 
 	// Test getting project memberships (requires a project ID)
 	// We'll use a placeholder project ID for demonstration
-	testProjectID := "test-project-id"
+	listProjects, err := client.Projects().List(ctx)
+	if err != nil || listProjects == nil || len(listProjects.Data) == 0 {
+		fmt.Println("No projects found to test project memberships. Skipping project membership tests.")
+		return
+	}
+	testProjectID := listProjects.Data[0].ID
 	fmt.Printf("Listing project memberships for project: %s...\n", testProjectID)
 	projectMemberships, err := organizationClient.ListProjectMemberships(ctx, testProjectID)
 	if err != nil {
@@ -770,7 +775,7 @@ func runProjectTests(client *langfuse.LangFuse) {
 
 	// Test getting current project(s)
 	fmt.Println("Getting current project(s)...")
-	currentProjects, err := projectClient.Get(ctx)
+	currentProjects, err := projectClient.List(ctx)
 	if err != nil {
 		fmt.Printf("Error getting current projects: %v\n", err)
 	} else {
@@ -876,11 +881,12 @@ func runCommentTests(client *langfuse.LangFuse) {
 	ctx := context.Background()
 	commentClient := client.Comments()
 
-	projectID := os.Getenv("LANGFUSE_PROJECT_ID")
-	if projectID == "" {
-		fmt.Println("LANGFUSE_PROJECT_ID environment variable is not set. Skipping comment tests.")
+	listProjects, err := client.Projects().List(ctx)
+	if err != nil || listProjects == nil || len(listProjects.Data) == 0 {
+		fmt.Println("No projects found to test project memberships. Skipping project membership tests.")
 		return
 	}
+	projectID := listProjects.Data[0].ID
 
 	fmt.Println("Testing Comment API...")
 
@@ -1029,9 +1035,13 @@ func runAnnotationTests(client *langfuse.LangFuse) {
 	ctx := context.Background()
 
 	// Create annotation clients directly since they're not exposed through the main client
-	langfuseHost := "https://us.cloud.langfuse.com"
+	langfuseHost := os.Getenv("LANGFUSE_HOST")
 	langfusePubKey := os.Getenv("LANGFUSE_PUBLIC_KEY")
 	langfuseSecret := os.Getenv("LANGFUSE_SECRET_KEY")
+	if langfuseHost == "" || langfusePubKey == "" || langfuseSecret == "" {
+		fmt.Println("LANGFUSE_HOST, LANGFUSE_PUBLIC_KEY, or LANGFUSE_SECRET_KEY environment variable is not set. Skipping annotation tests.")
+		return
+	}
 
 	restyCli := resty.New().
 		SetBaseURL(langfuseHost+"/api/public").
@@ -1063,8 +1073,16 @@ func runAnnotationTests(client *langfuse.LangFuse) {
 	}
 	fmt.Printf("Created score config: %s (ID: %s)\n", createdScoreConfig.Name, createdScoreConfig.ID)
 
-	// No quota to test create queue API
-	testQueueID := "cmei1f6e00e7uad07dirm3e4n"
+	createdQueue, err := queueClient.Create(ctx, &annotations.CreateQueueRequest{
+		Name:           "test-annotation-queue",
+		Description:    "Test annotation queue for integration tests",
+		ScoreConfigIDs: []string{createdScoreConfig.ID},
+	})
+	if err != nil {
+		printError("Error creating annotation queue: %v\n", err)
+		return
+	}
+	testQueueID := createdQueue.ID
 
 	// Test listing annotation queues
 	fmt.Println("Listing annotation queues...")
@@ -1232,12 +1250,12 @@ func stringPtr(s string) *string {
 }
 
 func main() {
-	langfuseHost := "https://us.cloud.langfuse.com"
+	langfuseHost := os.Getenv("LANGFUSE_HOST")
 	langfusePubKey := os.Getenv("LANGFUSE_PUBLIC_KEY")
 	langfuseSecret := os.Getenv("LANGFUSE_SECRET_KEY")
 
-	if langfusePubKey == "" || langfuseSecret == "" {
-		fmt.Println("LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY environment variables must be set")
+	if langfusePubKey == "" || langfuseSecret == "" || langfuseHost == "" {
+		fmt.Println("LANGFUSE_HOST, LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY environment variables must be set")
 		return
 	}
 

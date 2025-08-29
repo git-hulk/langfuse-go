@@ -25,10 +25,10 @@ import (
 type CommentObjectType string
 
 const (
-	ObjectTypeTrace       CommentObjectType = "trace"
-	ObjectTypeObservation CommentObjectType = "observation"
-	ObjectTypeSession     CommentObjectType = "session"
-	ObjectTypePrompt      CommentObjectType = "prompt"
+	ObjectTypeTrace       CommentObjectType = "TRACE"
+	ObjectTypeObservation CommentObjectType = "OBSERVATION"
+	ObjectTypeSession     CommentObjectType = "SESSION"
+	ObjectTypePrompt      CommentObjectType = "PROMPT"
 )
 
 // CommentEntry represents a comment attached to an object in Langfuse.

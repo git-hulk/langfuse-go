@@ -120,8 +120,8 @@ func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }
 
-// Get retrieves the project associated with the API key.
-func (c *Client) Get(ctx context.Context) (*ProjectsResponse, error) {
+// List retrieves the project associated with the API key.
+func (c *Client) List(ctx context.Context) (*ProjectsResponse, error) {
 	var projects ProjectsResponse
 	rsp, err := c.restyCli.R().
 		SetContext(ctx).

@@ -97,7 +97,7 @@ func TestProjectClient_Get(t *testing.T) {
 
 	cli := resty.New().SetBaseURL(server.URL)
 	client := NewClient(cli)
-	projects, err := client.Get(context.Background())
+	projects, err := client.List(context.Background())
 	require.NoError(t, err)
 	require.Len(t, projects.Data, 2)
 	require.Equal(t, "project-1", projects.Data[0].ID)
