@@ -165,22 +165,22 @@ func TestCommentObjectType(t *testing.T) {
 		{
 			name:       "trace type",
 			objectType: ObjectTypeTrace,
-			want:       "trace",
+			want:       "TRACE",
 		},
 		{
 			name:       "observation type",
 			objectType: ObjectTypeObservation,
-			want:       "observation",
+			want:       "OBSERVATION",
 		},
 		{
 			name:       "session type",
 			objectType: ObjectTypeSession,
-			want:       "session",
+			want:       "SESSION",
 		},
 		{
 			name:       "prompt type",
 			objectType: ObjectTypePrompt,
-			want:       "prompt",
+			want:       "PROMPT",
 		},
 	}
 
