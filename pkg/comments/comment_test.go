@@ -128,7 +128,7 @@ func TestListParams_ToQueryString(t *testing.T) {
 				ObjectType: ObjectTypeTrace,
 				ObjectID:   "trace-123",
 			},
-			want: "page=1&limit=10&objectType=trace&objectId=trace-123",
+			want: "page=1&limit=10&objectType=TRACE&objectId=trace-123",
 		},
 		{
 			name: "partial params",
@@ -143,7 +143,7 @@ func TestListParams_ToQueryString(t *testing.T) {
 			params: ListParams{
 				ObjectType: ObjectTypeObservation,
 			},
-			want: "objectType=observation",
+			want: "objectType=OBSERVATION",
 		},
 	}
 
@@ -165,22 +165,22 @@ func TestCommentObjectType(t *testing.T) {
 		{
 			name:       "trace type",
 			objectType: ObjectTypeTrace,
-			want:       "trace",
+			want:       "TRACE",
 		},
 		{
 			name:       "observation type",
 			objectType: ObjectTypeObservation,
-			want:       "observation",
+			want:       "OBSERVATION",
 		},
 		{
 			name:       "session type",
 			objectType: ObjectTypeSession,
-			want:       "session",
+			want:       "SESSION",
 		},
 		{
 			name:       "prompt type",
 			objectType: ObjectTypePrompt,
-			want:       "prompt",
+			want:       "PROMPT",
 		},
 	}
 
