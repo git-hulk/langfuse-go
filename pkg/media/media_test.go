@@ -180,7 +180,7 @@ func TestClient_GetUploadURL(t *testing.T) {
 			MediaID:   mockMediaID,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
@@ -231,7 +231,7 @@ func TestClient_Get(t *testing.T) {
 			URLExpiry:     "2024-01-01T00:00:00Z",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
