@@ -27,6 +27,7 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/datasets"
 	"github.com/git-hulk/langfuse-go/pkg/health"
 	"github.com/git-hulk/langfuse-go/pkg/llmconnections"
+	"github.com/git-hulk/langfuse-go/pkg/media"
 	"github.com/git-hulk/langfuse-go/pkg/models"
 	"github.com/git-hulk/langfuse-go/pkg/projects"
 	"github.com/git-hulk/langfuse-go/pkg/prompts"
@@ -55,6 +56,7 @@ type LangFuse struct {
 	llmConnection *llmconnections.Client
 	organization  *organizations.Client
 	health        *health.Client
+	media         *media.Client
 	restyCli      *resty.Client
 }
 
@@ -82,6 +84,7 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 		llmConnection: llmconnections.NewClient(restyCli),
 		organization:  organizations.NewClient(restyCli),
 		health:        health.NewClient(restyCli),
+		media:         media.NewClient(restyCli),
 		restyCli:      restyCli,
 	}
 }
@@ -174,6 +177,15 @@ func (c *LangFuse) Organizations() *organizations.Client {
 // Use this client to verify connectivity and server status.
 func (c *LangFuse) Health() *health.Client {
 	return c.health
+}
+
+// Media returns a client for managing media files associated with traces and observations.
+//
+// Use this client to upload, retrieve, and manage media files including images, audio,
+// video, and documents. Media files are associated with traces and observations through
+// their input, output, or metadata fields.
+func (c *LangFuse) Media() *media.Client {
+	return c.media
 }
 
 // Close gracefully shuts down the client and flushes all pending traces.
