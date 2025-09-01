@@ -7,6 +7,7 @@ package prompts
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -41,29 +42,83 @@ func (c *ChatMessageWithPlaceHolder) validate() error {
 
 // PromptEntry represents a complete prompt template with its configuration and messages.
 //
-// A prompt entry contains the prompt name, an array of chat messages with placeholders,
-// type information, version number, and optional metadata like tags and labels.
+// A prompt entry contains the prompt name, which can be either a string (when Type is "text")
+// or an array of chat messages with placeholders (for other types).
+// The Type field determines the expected structure of the Prompt field.
 // The Config field can contain model-specific configuration parameters.
 type PromptEntry struct {
-	Name    string                       `json:"name"`
-	Prompt  []ChatMessageWithPlaceHolder `json:"prompt"`
-	Type    string                       `json:"type"`
-	Version int                          `json:"version,omitempty"`
-	Tags    []string                     `json:"tags,omitempty"`
-	Labels  []string                     `json:"labels,omitempty"`
-	Config  any                          `json:"config,omitempty"`
+	Name    string   `json:"name"`
+	Prompt  any      `json:"prompt"`
+	Type    string   `json:"type"`
+	Version int      `json:"version,omitempty"`
+	Tags    []string `json:"tags,omitempty"`
+	Labels  []string `json:"labels,omitempty"`
+	Config  any      `json:"config,omitempty"`
+}
+
+// UnmarshalJSON implements custom JSON unmarshalling for PromptEntry.
+// It correctly unmarshal the Prompt field as either a string (for "text" type)
+// or []ChatMessageWithPlaceHolder (for other types) based on the Type field.
+func (p *PromptEntry) UnmarshalJSON(data []byte) error {
+	// Define an alias to avoid infinite recursion during unmarshalling
+	type Alias PromptEntry
+
+	// First, unmarshal into a temporary struct with raw JSON for the Prompt field
+	temp := &struct {
+		*Alias
+		Prompt json.RawMessage `json:"prompt"`
+	}{
+		Alias: (*Alias)(p),
+	}
+
+	if err := json.Unmarshal(data, temp); err != nil {
+		return err
+	}
+
+	if p.Type == "text" {
+		var promptStr string
+		if err := json.Unmarshal(temp.Prompt, &promptStr); err != nil {
+			return fmt.Errorf("failed to unmarshal prompt as string for type 'text': %w", err)
+		}
+		p.Prompt = promptStr
+	} else {
+		var promptMessages []ChatMessageWithPlaceHolder
+		if err := json.Unmarshal(temp.Prompt, &promptMessages); err != nil {
+			return fmt.Errorf("failed to unmarshal prompt as []ChatMessageWithPlaceHolder for type '%s': %w", p.Type, err)
+		}
+		p.Prompt = promptMessages
+	}
+
+	return nil
 }
 
 func (p *PromptEntry) validate() error {
 	if p.Name == "" {
 		return errors.New("'name' is required")
 	}
-	if len(p.Prompt) == 0 {
-		return errors.New("'prompts' cannot be empty")
+	if p.Prompt == nil {
+		return errors.New("'prompt' cannot be nil")
 	}
-	for _, msg := range p.Prompt {
-		if err := msg.validate(); err != nil {
-			return fmt.Errorf("invalid prompts message: %w", err)
+
+	// Validate based on Type field
+	if p.Type == "text" {
+		// For text type, prompt should be a string
+		if str, ok := p.Prompt.(string); !ok || str == "" {
+			return errors.New("'prompt' must be a non-empty string when type is 'text'")
+		}
+	} else {
+		// For other types, prompt should be []ChatMessageWithPlaceHolder
+		messages, ok := p.Prompt.([]ChatMessageWithPlaceHolder)
+		if !ok {
+			return errors.New("'prompt' must be []ChatMessageWithPlaceHolder when type is not 'text'")
+		}
+		if len(messages) == 0 {
+			return errors.New("'prompt' cannot be empty")
+		}
+		for _, msg := range messages {
+			if err := msg.validate(); err != nil {
+				return fmt.Errorf("invalid prompts message: %w", err)
+			}
 		}
 	}
 	return nil
@@ -121,12 +176,21 @@ type GetParams struct {
 	Version int
 }
 
+type PromptMeta struct {
+	Name          string    `json:"name"`
+	Labels        []string  `json:"labels"`
+	Tags          []string  `json:"tags"`
+	Versions      []int     `json:"versions"`
+	LastConfig    any       `json:"lastConfig,omitempty"`
+	LastUpdatedAt time.Time `json:"lastUpdatedAt"`
+}
+
 // ListPrompts represents the response structure for prompt listing operations.
 //
 // It contains pagination metadata and an array of prompt entries matching the query parameters.
 type ListPrompts struct {
 	Metadata common.ListMetadata `json:"meta"`
-	Data     []PromptEntry       `json:"data"`
+	Data     []PromptMeta        `json:"data"`
 }
 
 // Client provides methods for interacting with the Langfuse prompts API.
@@ -177,7 +241,6 @@ func (c Client) List(ctx context.Context, params ListParams) (*ListPrompts, erro
 	var listResponse ListPrompts
 	rsp, err := c.restyCli.R().
 		SetContext(ctx).
-		SetResult(&listResponse).
 		SetQueryString(params.ToQueryString()).
 		Get("/v2/prompts")
 	if err != nil {
@@ -186,6 +249,9 @@ func (c Client) List(ctx context.Context, params ListParams) (*ListPrompts, erro
 
 	if rsp.IsError() {
 		return nil, fmt.Errorf("list prompts failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
+	}
+	if err := json.Unmarshal(rsp.Body(), &listResponse); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal list prompts response: %w", err)
 	}
 	return &listResponse, nil
 }

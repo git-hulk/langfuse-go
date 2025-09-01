@@ -189,8 +189,48 @@ func runPromptTests(client *langfuse.Langfuse) {
 		if err != nil {
 			printError("Error getting prompt: %v\n", err)
 		} else {
+			messages, ok := retrievedPrompt.Prompt.([]prompts.ChatMessageWithPlaceHolder)
+			if !ok {
+				printError("Error: retrieved prompt has unexpected type\n")
+				return
+			}
 			fmt.Printf("Retrieved prompt: %s (type: %s, messages: %d)\n",
-				retrievedPrompt.Name, retrievedPrompt.Type, len(retrievedPrompt.Prompt))
+				retrievedPrompt.Name, retrievedPrompt.Type, len(messages))
+		}
+	}
+
+	// Test creating a text prompt
+	textPrompt := &prompts.PromptEntry{
+		Name:   "test-text-prompt",
+		Type:   "text",
+		Prompt: "You are a helpful assistant. Please respond to: {{user_query}}",
+		Tags:   []string{"test", "text-type"},
+		Labels: []string{"v1"},
+	}
+
+	fmt.Println("Creating test text prompt...")
+	createdTextPrompt, err := promptClient.Create(ctx, textPrompt)
+	if err != nil {
+		printError("Error creating text prompt: %v\n", err)
+	} else {
+		fmt.Printf("Created text prompt: %s (version: %d, type: %s)\n", 
+			createdTextPrompt.Name, createdTextPrompt.Version, createdTextPrompt.Type)
+		
+		// Test getting the text prompt
+		textGetParams := prompts.GetParams{
+			Name:    createdTextPrompt.Name,
+			Version: createdTextPrompt.Version,
+		}
+		retrievedTextPrompt, err := promptClient.Get(ctx, textGetParams)
+		if err != nil {
+			printError("Error getting text prompt: %v\n", err)
+		} else {
+			if textStr, ok := retrievedTextPrompt.Prompt.(string); ok {
+				fmt.Printf("Retrieved text prompt: %s (content: %s)\n", 
+					retrievedTextPrompt.Name, textStr[:50]+"...")
+			} else {
+				printError("Error: retrieved text prompt has unexpected type\n")
+			}
 		}
 	}
 
