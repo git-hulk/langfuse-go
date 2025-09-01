@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -1057,95 +1055,25 @@ func runMediaTests(client *langfuse.LangFuse) {
 	// Wait a moment for trace to be processed
 	time.Sleep(2 * time.Second)
 
-	// Create sample file content and calculate its hash
-	sampleFileContent := []byte("This is a test file for media upload integration testing.")
-	contentHash := calculateSHA256Hash(sampleFileContent)
-	contentLength := len(sampleFileContent)
-
-	// Test getting upload URL for media
-	testUploadRequest := &media.GetUploadURLRequest{
-		TraceID:       trace.ID,
-		ContentType:   media.ContentTypeTextPlain,
-		ContentLength: contentLength,
-		SHA256Hash:    contentHash,
-		Field:         "input",
-	}
-
-	fmt.Println("Getting upload URL for media...")
-	uploadResponse, err := mediaClient.GetUploadURL(ctx, testUploadRequest)
+	fmt.Println("Getting upload file for media...")
+	uploadFileResponse, err := mediaClient.UploadFile(ctx, &media.UploadFileRequest{
+		TraceID:  trace.ID,
+		Field:    "input",
+		FilePath: "./testdata/hello.txt",
+	})
 	if err != nil {
-		printError("Error getting upload URL: %v\n", err)
-		return
-	}
-	fmt.Printf("Got media ID: %s\n", uploadResponse.MediaID)
-
-	// If we got an upload URL, actually upload the file
-	if uploadResponse.UploadURL != "" {
-		fmt.Printf("Upload URL provided - uploading file (%d bytes)...\n", contentLength)
-
-		// Create HTTP request to upload the file
-		req, err := http.NewRequestWithContext(ctx, "PUT", uploadResponse.UploadURL, bytes.NewReader(sampleFileContent))
-		if err != nil {
-			printError("Error creating upload request: %v\n", err)
-		} else {
-			req.Header.Set("Content-Type", string(media.ContentTypeTextPlain))
-
-			client := &http.Client{Timeout: 30 * time.Second}
-			uploadStart := time.Now()
-			resp, err := client.Do(req)
-			uploadDuration := time.Since(uploadStart)
-
-			if err != nil {
-				printError("Error uploading file: %v\n", err)
-
-				// Report upload failure
-				patchRequest := &media.PatchMediaRequest{
-					UploadedAt:       time.Now(),
-					UploadHTTPStatus: 0,
-					UploadHTTPError:  err.Error(),
-					UploadTimeMs:     int(uploadDuration.Milliseconds()),
-				}
-				if patchErr := mediaClient.Patch(ctx, uploadResponse.MediaID, patchRequest); patchErr != nil {
-					printError("Error updating media upload failure status: %v\n", patchErr)
-				}
-			} else {
-				defer func() {
-					if closeErr := resp.Body.Close(); closeErr != nil {
-						printError("Error closing response body: %v\n", closeErr)
-					}
-				}()
-				fmt.Printf("File uploaded successfully! Status: %d, Duration: %v\n", resp.StatusCode, uploadDuration)
-
-				// Report upload success
-				patchRequest := &media.PatchMediaRequest{
-					UploadedAt:       time.Now(),
-					UploadHTTPStatus: resp.StatusCode,
-					UploadTimeMs:     int(uploadDuration.Milliseconds()),
-				}
-				err := mediaClient.Patch(ctx, uploadResponse.MediaID, patchRequest)
-				if err != nil {
-					printError("Error updating media upload status: %v\n", err)
-				} else {
-					fmt.Println("Upload status updated successfully")
-				}
-			}
-		}
+		printError("Error uploading file: %v\n", err)
 	} else {
-		fmt.Println("No upload URL - media with this hash may already exist")
+		fmt.Printf("Uploaded file successfully - Media ID: %s\n",
+			uploadFileResponse.MediaID)
 	}
 
-	// Test getting media by ID
-	if uploadResponse.MediaID != "" {
-		fmt.Printf("Getting media by ID: %s\n", uploadResponse.MediaID)
-		mediaInfo, err := mediaClient.Get(ctx, uploadResponse.MediaID)
-		if err != nil {
-			printError("Error getting media: %v\n", err)
-		} else {
-			fmt.Printf("Retrieved media: %s (type: %s, size: %d bytes)\n",
-				mediaInfo.MediaID, mediaInfo.ContentType, mediaInfo.ContentLength)
-			fmt.Printf("Uploaded at: %s, URL expiry: %s\n",
-				mediaInfo.UploadedAt.Format("2006-01-02 15:04:05"), mediaInfo.URLExpiry)
-		}
+	getMediaResponse, err := mediaClient.Get(ctx, uploadFileResponse.MediaID)
+	if err != nil {
+		printError("Error retrieving uploaded media: %v\n", err)
+	} else {
+		fmt.Printf("Retrieved uploaded media - Media ID: %s, ContentType: %s, Size: %d bytes\n",
+			getMediaResponse.MediaID, getMediaResponse.ContentType, getMediaResponse.ContentLength)
 	}
 
 	// Test different field values

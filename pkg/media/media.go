@@ -14,6 +14,7 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -292,23 +293,23 @@ func (c *Client) UploadFromBytes(ctx context.Context, request *UploadFromBytesRe
 		Field:         request.Field,
 	}
 
-	uploadURLResp, err := c.GetUploadURL(ctx, uploadURLReq)
+	uploadURLRsp, err := c.GetUploadURL(ctx, uploadURLReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get upload URL: %w", err)
 	}
 
 	// If upload URL is empty, file already exists
-	if uploadURLResp.UploadURL == "" {
-		return &UploadResponse{MediaID: uploadURLResp.MediaID}, nil
+	if uploadURLRsp.UploadURL == "" {
+		return &UploadResponse{MediaID: uploadURLRsp.MediaID}, nil
 	}
 
-	// Upload the file using the presigned URL
 	startTime := time.Now()
-	uploadResp, err := resty.New().R().
+	uploadRsp, err := resty.New().R().
 		SetContext(ctx).
 		SetHeader("Content-Type", string(request.ContentType)).
+		SetHeader("x-amz-checksum-sha256", sha256Hash).
 		SetBody(request.Data).
-		Put(uploadURLResp.UploadURL)
+		Put(uploadURLRsp.UploadURL)
 
 	uploadTimeMs := int(time.Since(startTime).Milliseconds())
 
@@ -322,24 +323,36 @@ func (c *Client) UploadFromBytes(ctx context.Context, request *UploadFromBytesRe
 		patchReq.UploadHTTPStatus = 0 // Use 0 for network errors
 		patchReq.UploadHTTPError = err.Error()
 	} else {
-		patchReq.UploadHTTPStatus = uploadResp.StatusCode()
-		if uploadResp.IsError() {
-			patchReq.UploadHTTPError = fmt.Sprintf("HTTP %d: %s", uploadResp.StatusCode(), uploadResp.String())
+		patchReq.UploadHTTPStatus = uploadRsp.StatusCode()
+		if uploadRsp.IsError() {
+			patchReq.UploadHTTPError = fmt.Sprintf("HTTP %d: %s", uploadRsp.StatusCode(), uploadRsp.String())
 		}
 	}
 
-	if patchErr := c.Patch(ctx, uploadURLResp.MediaID, patchReq); patchErr != nil {
+	if patchErr := c.Patch(ctx, uploadURLRsp.MediaID, patchReq); patchErr != nil {
 		return nil, fmt.Errorf("failed to update media record: %w", patchErr)
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload media: %w", err)
 	}
-	if uploadResp.IsError() {
-		return nil, fmt.Errorf("upload failed with status %d: %s", uploadResp.StatusCode(), uploadResp.String())
+	if uploadRsp.IsError() {
+		return nil, fmt.Errorf("upload failed with status %d: %s", uploadRsp.StatusCode(), uploadRsp.String())
 	}
 
-	return &UploadResponse{MediaID: uploadURLResp.MediaID}, nil
+	return &UploadResponse{MediaID: uploadURLRsp.MediaID}, nil
+}
+
+func getContentTypeFromFileExtension(filePath string) (ContentType, error) {
+	ext := filepath.Ext(filePath)
+	// For some extensions, mime.TypeByExtension may return multiple types separated by semicolon.
+	// For example: "text/html; charset=utf-8", and we only need the first part.
+	fields := strings.Split(mime.TypeByExtension(ext), ";")
+	mimeType := strings.TrimSpace(fields[0])
+	if mimeType != "" {
+		return ContentType(mimeType), nil
+	}
+	return "", fmt.Errorf("could not determine content type for file extension %s", ext)
 }
 
 // UploadFile uploads a media file from the local filesystem.
@@ -360,23 +373,17 @@ func (c *Client) UploadFile(ctx context.Context, request *UploadFileRequest) (*U
 	// Auto-detect content type if not specified
 	contentType := request.ContentType
 	if contentType == "" {
-		ext := filepath.Ext(request.FilePath)
-		mimeType := mime.TypeByExtension(ext)
-		if mimeType != "" {
-			contentType = ContentType(mimeType)
-		} else {
-			return nil, fmt.Errorf("could not determine content type for file extension %s", ext)
+		contentType, err = getContentTypeFromFileExtension(request.FilePath)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	// Create UploadFromBytes request
-	uploadReq := &UploadFromBytesRequest{
+	return c.UploadFromBytes(ctx, &UploadFromBytesRequest{
 		TraceID:       request.TraceID,
 		ObservationID: request.ObservationID,
 		ContentType:   contentType,
 		Field:         request.Field,
 		Data:          data,
-	}
-
-	return c.UploadFromBytes(ctx, uploadReq)
+	})
 }
