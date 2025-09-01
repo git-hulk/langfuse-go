@@ -2,9 +2,14 @@ package media
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -15,17 +20,17 @@ import (
 func TestGetMediaUploadURLRequest_validate(t *testing.T) {
 	tests := []struct {
 		name    string
-		request GetMediaUploadURLRequest
+		request GetUploadURLRequest
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			"valid request",
-			GetMediaUploadURLRequest{
+			GetUploadURLRequest{
 				TraceID:       "trace-123",
 				ContentType:   ContentTypeImagePNG,
 				ContentLength: 1024,
-				SHA256Hash:    "abcd1234",
+				SHA256Hash:    "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 				Field:         "input",
 			},
 			false,
@@ -33,7 +38,7 @@ func TestGetMediaUploadURLRequest_validate(t *testing.T) {
 		},
 		{
 			"missing trace id",
-			GetMediaUploadURLRequest{
+			GetUploadURLRequest{
 				ContentType:   ContentTypeImagePNG,
 				ContentLength: 1024,
 				SHA256Hash:    "abcd1234",
@@ -44,10 +49,10 @@ func TestGetMediaUploadURLRequest_validate(t *testing.T) {
 		},
 		{
 			"missing content type",
-			GetMediaUploadURLRequest{
+			GetUploadURLRequest{
 				TraceID:       "trace-123",
 				ContentLength: 1024,
-				SHA256Hash:    "abcd1234",
+				SHA256Hash:    "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 				Field:         "input",
 			},
 			true,
@@ -55,11 +60,11 @@ func TestGetMediaUploadURLRequest_validate(t *testing.T) {
 		},
 		{
 			"invalid content length",
-			GetMediaUploadURLRequest{
+			GetUploadURLRequest{
 				TraceID:       "trace-123",
 				ContentType:   ContentTypeImagePNG,
 				ContentLength: 0,
-				SHA256Hash:    "abcd1234",
+				SHA256Hash:    "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 				Field:         "input",
 			},
 			true,
@@ -67,7 +72,7 @@ func TestGetMediaUploadURLRequest_validate(t *testing.T) {
 		},
 		{
 			"missing sha256 hash",
-			GetMediaUploadURLRequest{
+			GetUploadURLRequest{
 				TraceID:       "trace-123",
 				ContentType:   ContentTypeImagePNG,
 				ContentLength: 1024,
@@ -78,26 +83,50 @@ func TestGetMediaUploadURLRequest_validate(t *testing.T) {
 		},
 		{
 			"missing field",
-			GetMediaUploadURLRequest{
+			GetUploadURLRequest{
 				TraceID:       "trace-123",
 				ContentType:   ContentTypeImagePNG,
 				ContentLength: 1024,
-				SHA256Hash:    "abcd1234",
+				SHA256Hash:    "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 			},
 			true,
 			"'field' is required",
 		},
 		{
 			"invalid field",
-			GetMediaUploadURLRequest{
+			GetUploadURLRequest{
 				TraceID:       "trace-123",
 				ContentType:   ContentTypeImagePNG,
 				ContentLength: 1024,
-				SHA256Hash:    "abcd1234",
+				SHA256Hash:    "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 				Field:         "invalid",
 			},
 			true,
 			"'field' must be one of: input, output, metadata",
+		},
+		{
+			"invalid sha256 hash length",
+			GetUploadURLRequest{
+				TraceID:       "trace-123",
+				ContentType:   ContentTypeImagePNG,
+				ContentLength: 1024,
+				SHA256Hash:    "abcd1234",
+				Field:         "input",
+			},
+			true,
+			"'sha256Hash' must be a 44 character base64 encoded SHA-256 hash",
+		},
+		{
+			"invalid sha256 hash encoding",
+			GetUploadURLRequest{
+				TraceID:       "trace-123",
+				ContentType:   ContentTypeImagePNG,
+				ContentLength: 1024,
+				SHA256Hash:    "!@#$%^&*()1234567890abcdefghijklmnopqrstuv!!",
+				Field:         "input",
+			},
+			true,
+			"'sha256Hash' must be a valid base64 encoded string",
 		},
 	}
 
@@ -138,14 +167,6 @@ func TestPatchMediaRequest_validate(t *testing.T) {
 			true,
 			"'uploadedAt' is required",
 		},
-		{
-			"missing upload http status",
-			PatchMediaRequest{
-				UploadedAt: time.Now(),
-			},
-			true,
-			"'uploadHttpStatus' is required",
-		},
 	}
 
 	for _, tt := range tests {
@@ -169,14 +190,14 @@ func TestClient_GetUploadURL(t *testing.T) {
 		require.Equal(t, "POST", r.Method)
 		require.Equal(t, "/media", r.URL.Path)
 
-		var req GetMediaUploadURLRequest
+		var req GetUploadURLRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		require.NoError(t, err)
 		require.Equal(t, "trace-123", req.TraceID)
 		require.Equal(t, ContentTypeImagePNG, req.ContentType)
 
-		resp := GetMediaUploadURLResponse{
-			UploadURL: &mockUploadURL,
+		resp := GetUploadURLResponse{
+			UploadURL: mockUploadURL,
 			MediaID:   mockMediaID,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -186,11 +207,11 @@ func TestClient_GetUploadURL(t *testing.T) {
 
 	client := NewClient(resty.New().SetBaseURL(server.URL))
 
-	request := &GetMediaUploadURLRequest{
+	request := &GetUploadURLRequest{
 		TraceID:       "trace-123",
 		ContentType:   ContentTypeImagePNG,
 		ContentLength: 1024,
-		SHA256Hash:    "abcd1234",
+		SHA256Hash:    "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 		Field:         "input",
 	}
 
@@ -198,14 +219,14 @@ func TestClient_GetUploadURL(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, response)
 	require.Equal(t, mockMediaID, response.MediaID)
-	require.NotNil(t, response.UploadURL)
-	require.Equal(t, mockUploadURL, *response.UploadURL)
+	require.NotEmpty(t, response.UploadURL)
+	require.Equal(t, mockUploadURL, response.UploadURL)
 }
 
 func TestClient_GetUploadURL_ValidationError(t *testing.T) {
 	client := NewClient(resty.New())
 
-	request := &GetMediaUploadURLRequest{
+	request := &GetUploadURLRequest{
 		// Missing required fields
 	}
 
@@ -304,4 +325,420 @@ func TestClient_Patch_EmptyMediaID(t *testing.T) {
 	err := client.Patch(context.Background(), "", request)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "'mediaID' is required")
+}
+
+func TestUploadFromBytesRequest_validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		request UploadFromBytesRequest
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			"valid request",
+			UploadFromBytesRequest{
+				TraceID:     "trace-123",
+				ContentType: ContentTypeImagePNG,
+				Field:       "input",
+				Data:        []byte("test data"),
+			},
+			false,
+			"",
+		},
+		{
+			"missing trace id",
+			UploadFromBytesRequest{
+				ContentType: ContentTypeImagePNG,
+				Field:       "input",
+				Data:        []byte("test data"),
+			},
+			true,
+			"'traceId' is required",
+		},
+		{
+			"missing content type",
+			UploadFromBytesRequest{
+				TraceID: "trace-123",
+				Field:   "input",
+				Data:    []byte("test data"),
+			},
+			true,
+			"'contentType' is required",
+		},
+		{
+			"missing field",
+			UploadFromBytesRequest{
+				TraceID:     "trace-123",
+				ContentType: ContentTypeImagePNG,
+				Data:        []byte("test data"),
+			},
+			true,
+			"'field' is required",
+		},
+		{
+			"invalid field",
+			UploadFromBytesRequest{
+				TraceID:     "trace-123",
+				ContentType: ContentTypeImagePNG,
+				Field:       "invalid",
+				Data:        []byte("test data"),
+			},
+			true,
+			"'field' must be one of: input, output, metadata",
+		},
+		{
+			"missing data",
+			UploadFromBytesRequest{
+				TraceID:     "trace-123",
+				ContentType: ContentTypeImagePNG,
+				Field:       "input",
+			},
+			true,
+			"'data' is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.request.validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestUploadFileRequest_validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		request UploadFileRequest
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			"valid request",
+			UploadFileRequest{
+				TraceID:     "trace-123",
+				ContentType: ContentTypeImagePNG,
+				Field:       "input",
+				FilePath:    "/path/to/file.png",
+			},
+			false,
+			"",
+		},
+		{
+			"missing trace id",
+			UploadFileRequest{
+				ContentType: ContentTypeImagePNG,
+				Field:       "input",
+				FilePath:    "/path/to/file.png",
+			},
+			true,
+			"'traceId' is required",
+		},
+		{
+			"missing field",
+			UploadFileRequest{
+				TraceID:     "trace-123",
+				ContentType: ContentTypeImagePNG,
+				FilePath:    "/path/to/file.png",
+			},
+			true,
+			"'field' is required",
+		},
+		{
+			"invalid field",
+			UploadFileRequest{
+				TraceID:     "trace-123",
+				ContentType: ContentTypeImagePNG,
+				Field:       "invalid",
+				FilePath:    "/path/to/file.png",
+			},
+			true,
+			"'field' must be one of: input, output, metadata",
+		},
+		{
+			"missing file path",
+			UploadFileRequest{
+				TraceID:     "trace-123",
+				ContentType: ContentTypeImagePNG,
+				Field:       "input",
+			},
+			true,
+			"'filePath' is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.request.validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestClient_UploadFromBytes(t *testing.T) {
+	testData := []byte("test file content")
+	hash := sha256.Sum256(testData)
+	expectedHash := base64.StdEncoding.EncodeToString(hash[:])
+	mockMediaID := "media-123"
+
+	// Mock servers for upload URL and actual upload
+	uploadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "PUT", r.Method)
+		require.Equal(t, "image/png", r.Header.Get("Content-Type"))
+
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		require.Equal(t, testData, body)
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer uploadServer.Close()
+
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			require.Equal(t, "/media", r.URL.Path)
+
+			var req GetUploadURLRequest
+			err := json.NewDecoder(r.Body).Decode(&req)
+			require.NoError(t, err)
+			require.Equal(t, "trace-123", req.TraceID)
+			require.Equal(t, ContentTypeImagePNG, req.ContentType)
+			require.Equal(t, len(testData), req.ContentLength)
+			require.Equal(t, expectedHash, req.SHA256Hash)
+			require.Equal(t, "input", req.Field)
+
+			resp := GetUploadURLResponse{
+				UploadURL: uploadServer.URL + "/upload",
+				MediaID:   mockMediaID,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+
+		case "PATCH":
+			require.Equal(t, "/media/"+mockMediaID, r.URL.Path)
+
+			var req PatchMediaRequest
+			err := json.NewDecoder(r.Body).Decode(&req)
+			require.NoError(t, err)
+			require.Equal(t, 200, req.UploadHTTPStatus)
+			require.Empty(t, req.UploadHTTPError)
+			require.GreaterOrEqual(t, req.UploadTimeMs, 0)
+
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer apiServer.Close()
+
+	client := NewClient(resty.New().SetBaseURL(apiServer.URL))
+
+	request := &UploadFromBytesRequest{
+		TraceID:     "trace-123",
+		ContentType: ContentTypeImagePNG,
+		Field:       "input",
+		Data:        testData,
+	}
+
+	response, err := client.UploadFromBytes(context.Background(), request)
+	require.NoError(t, err)
+	require.NotNil(t, response)
+	require.Equal(t, mockMediaID, response.MediaID)
+}
+
+func TestClient_UploadFromBytes_ValidationError(t *testing.T) {
+	client := NewClient(resty.New())
+
+	request := &UploadFromBytesRequest{
+		// Missing required fields
+	}
+
+	_, err := client.UploadFromBytes(context.Background(), request)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "'traceId' is required")
+}
+
+func TestClient_UploadFromBytes_ExistingFile(t *testing.T) {
+	mockMediaID := "media-123"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "POST", r.Method)
+		require.Equal(t, "/media", r.URL.Path)
+
+		// Return empty upload URL to simulate existing file
+		resp := GetUploadURLResponse{
+			UploadURL: "",
+			MediaID:   mockMediaID,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(resty.New().SetBaseURL(server.URL))
+
+	request := &UploadFromBytesRequest{
+		TraceID:     "trace-123",
+		ContentType: ContentTypeImagePNG,
+		Field:       "input",
+		Data:        []byte("test data"),
+	}
+
+	response, err := client.UploadFromBytes(context.Background(), request)
+	require.NoError(t, err)
+	require.NotNil(t, response)
+	require.Equal(t, mockMediaID, response.MediaID)
+}
+
+func TestClient_UploadFile(t *testing.T) {
+	// Create a temporary test file
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "test.png")
+	testData := []byte("test file content")
+	err := os.WriteFile(testFile, testData, 0644)
+	require.NoError(t, err)
+
+	hash := sha256.Sum256(testData)
+	expectedHash := base64.StdEncoding.EncodeToString(hash[:])
+	mockMediaID := "media-123"
+
+	// Mock servers for upload URL and actual upload
+	uploadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "PUT", r.Method)
+		require.Equal(t, "image/png", r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer uploadServer.Close()
+
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			require.Equal(t, "/media", r.URL.Path)
+
+			var req GetUploadURLRequest
+			err := json.NewDecoder(r.Body).Decode(&req)
+			require.NoError(t, err)
+			require.Equal(t, "trace-123", req.TraceID)
+			require.Equal(t, ContentTypeImagePNG, req.ContentType)
+			require.Equal(t, len(testData), req.ContentLength)
+			require.Equal(t, expectedHash, req.SHA256Hash)
+			require.Equal(t, "input", req.Field)
+
+			resp := GetUploadURLResponse{
+				UploadURL: uploadServer.URL + "/upload",
+				MediaID:   mockMediaID,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+
+		case "PATCH":
+			require.Equal(t, "/media/"+mockMediaID, r.URL.Path)
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer apiServer.Close()
+
+	client := NewClient(resty.New().SetBaseURL(apiServer.URL))
+
+	request := &UploadFileRequest{
+		TraceID:     "trace-123",
+		ContentType: ContentTypeImagePNG,
+		Field:       "input",
+		FilePath:    testFile,
+	}
+
+	response, err := client.UploadFile(context.Background(), request)
+	require.NoError(t, err)
+	require.NotNil(t, response)
+	require.Equal(t, mockMediaID, response.MediaID)
+}
+
+func TestClient_UploadFile_ValidationError(t *testing.T) {
+	client := NewClient(resty.New())
+
+	request := &UploadFileRequest{
+		// Missing required fields
+	}
+
+	_, err := client.UploadFile(context.Background(), request)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "'traceId' is required")
+}
+
+func TestClient_UploadFile_FileNotFound(t *testing.T) {
+	client := NewClient(resty.New())
+
+	request := &UploadFileRequest{
+		TraceID:     "trace-123",
+		ContentType: ContentTypeImagePNG,
+		Field:       "input",
+		FilePath:    "/nonexistent/file.png",
+	}
+
+	_, err := client.UploadFile(context.Background(), request)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to read file")
+}
+
+func TestClient_UploadFile_AutoDetectContentType(t *testing.T) {
+	// Create a temporary test file
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "test.jpg")
+	testData := []byte("test image data")
+	err := os.WriteFile(testFile, testData, 0644)
+	require.NoError(t, err)
+
+	mockMediaID := "media-123"
+
+	// Mock servers
+	uploadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "PUT", r.Method)
+		require.Equal(t, "image/jpeg", r.Header.Get("Content-Type"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer uploadServer.Close()
+
+	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			var req GetUploadURLRequest
+			err := json.NewDecoder(r.Body).Decode(&req)
+			require.NoError(t, err)
+			require.Equal(t, ContentType("image/jpeg"), req.ContentType) // Auto-detected from .jpg extension
+
+			resp := GetUploadURLResponse{
+				UploadURL: uploadServer.URL + "/upload",
+				MediaID:   mockMediaID,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+
+		case "PATCH":
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer apiServer.Close()
+
+	client := NewClient(resty.New().SetBaseURL(apiServer.URL))
+
+	request := &UploadFileRequest{
+		TraceID:  "trace-123",
+		Field:    "input",
+		FilePath: testFile,
+		// ContentType not specified - should be auto-detected
+	}
+
+	response, err := client.UploadFile(context.Background(), request)
+	require.NoError(t, err)
+	require.NotNil(t, response)
+	require.Equal(t, mockMediaID, response.MediaID)
 }

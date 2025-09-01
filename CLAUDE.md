@@ -128,3 +128,4 @@ client := features.NewClient(restyCli)
 - Use `Is` prefix for state checks: `IsActive`, `IsValid`
 - Use ALL_CAPS with underscores for package-level constants
 - Group related constants in blocks
+- "Don't use pointer for fields in struct"
