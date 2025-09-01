@@ -186,6 +186,10 @@ func (ingestor *Ingestor) withTraceID(id, name string) *Trace {
 	}
 }
 
+func (ingestor *Ingestor) Flush() {
+	ingestor.processor.Flush()
+}
+
 func (ingestor *Ingestor) Close() error {
 	return ingestor.processor.Close()
 }

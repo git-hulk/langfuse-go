@@ -905,8 +905,9 @@ func runCommentTests(client *langfuse.LangFuse) {
 	trace.Output = map[string]string{"response": "Test response for commenting"}
 	trace.End()
 
+	client.Flush()
 	// Wait a moment for trace to be processed
-	time.Sleep(2 * time.Second)
+	time.Sleep(time.Second)
 
 	// Test creating comments for different object types
 	testComments := []*comments.CreateCommentRequest{

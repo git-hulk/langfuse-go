@@ -89,6 +89,10 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 	}
 }
 
+func (c *LangFuse) Flush() {
+	c.ingestor.Flush()
+}
+
 // StartTrace creates a new trace with the given name.
 //
 // A trace represents a single execution flow in your application and can contain
