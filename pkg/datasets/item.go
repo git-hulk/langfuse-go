@@ -125,7 +125,7 @@ func (c *Client) GetDatasetItem(ctx context.Context, id string) (*DatasetItem, e
 		return nil, err
 	}
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get dataset item failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get dataset item failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &datasetItem, nil
 }
@@ -143,7 +143,7 @@ func (c *Client) ListDatasetItems(ctx context.Context, params ListDatasetItemPar
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list dataset items failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list dataset items failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -165,8 +165,8 @@ func (c *Client) CreateDatasetItem(ctx context.Context, createDatasetItem *Creat
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create dataset item, got status code: %d",
-			rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create dataset item: %s, got status code: %d",
+			rsp.String(), rsp.StatusCode())
 	}
 	return &createdDatasetItem, nil
 }
@@ -186,7 +186,7 @@ func (c *Client) DeleteDatasetItem(ctx context.Context, id string) error {
 	}
 
 	if rsp.IsError() {
-		return fmt.Errorf("failed to delete dataset item with status code %d", rsp.StatusCode())
+		return fmt.Errorf("failed to delete dataset item: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return nil
 }

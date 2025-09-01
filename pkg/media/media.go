@@ -155,7 +155,7 @@ func (c *Client) GetUploadURL(ctx context.Context, request *GetUploadURLRequest)
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get media upload url failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get media upload url failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &response, nil
 }
@@ -180,7 +180,7 @@ func (c *Client) Get(ctx context.Context, mediaID string) (*GetMediaResponse, er
 		return nil, err
 	}
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get media failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get media failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &media, nil
 }
@@ -207,7 +207,7 @@ func (c *Client) Patch(ctx context.Context, mediaID string, request *PatchMediaR
 		return err
 	}
 	if rsp.IsError() {
-		return fmt.Errorf("patch media failed with status code %d", rsp.StatusCode())
+		return fmt.Errorf("patch media failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return nil
 }

@@ -132,7 +132,7 @@ func (c *Client) List(ctx context.Context) (*ProjectsResponse, error) {
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get projects failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get projects failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &projects, nil
 }
@@ -181,7 +181,7 @@ func (c *Client) Update(ctx context.Context, projectID string, updateReq *Update
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to update project, got status code: %d", rsp.StatusCode())
+		return nil, fmt.Errorf("failed to update project: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &updatedProject, nil
 }
@@ -204,7 +204,7 @@ func (c *Client) Delete(ctx context.Context, projectID string) (*ProjectDeletion
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("delete project failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("delete project failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &deleteResponse, nil
 }
@@ -226,7 +226,7 @@ func (c *Client) GetAPIKeys(ctx context.Context, projectID string) (*APIKeyList,
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get project API keys failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get project API keys failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &apiKeys, nil
 }
@@ -276,7 +276,7 @@ func (c *Client) DeleteAPIKey(ctx context.Context, projectID, apiKeyID string) (
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("delete API key failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("delete API key failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &deleteResponse, nil
 }

@@ -43,7 +43,7 @@ func (c *Client) Check(ctx context.Context) (*HealthResponse, error) {
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get health failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get health failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &health, nil
 }

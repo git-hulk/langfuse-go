@@ -117,7 +117,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListSessions, er
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list sessions failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list sessions failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -140,7 +140,7 @@ func (c *Client) Get(ctx context.Context, sessionID string) (*SessionWithTraces,
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get session failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get session failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &session, nil
 }

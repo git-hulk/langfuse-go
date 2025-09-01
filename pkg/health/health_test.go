@@ -46,7 +46,7 @@ func TestHealthClient_Check_HTTPError(t *testing.T) {
 	health, err := client.Check(context.Background())
 	require.Error(t, err)
 	require.Nil(t, health)
-	require.Contains(t, err.Error(), "get health failed with status code 500")
+	require.Contains(t, err.Error(), "get health failed: , got status code: 500")
 }
 
 func TestHealthClient_Check_TransportError(t *testing.T) {

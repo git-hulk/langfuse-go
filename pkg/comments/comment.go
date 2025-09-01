@@ -157,7 +157,7 @@ func (c *Client) Get(ctx context.Context, id string) (*CommentEntry, error) {
 		return nil, err
 	}
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get comment failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get comment failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &comment, nil
 }
@@ -175,7 +175,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListComments, er
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list comments failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list comments failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -197,8 +197,8 @@ func (c *Client) Create(ctx context.Context, createComment *CreateCommentRequest
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create comment, got status code: %d",
-			rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create comment: %s, got status code: %d",
+			rsp.String(), rsp.StatusCode())
 	}
 	return &createdComment, nil
 }

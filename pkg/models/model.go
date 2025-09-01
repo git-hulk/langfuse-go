@@ -109,7 +109,7 @@ func (c *Client) Get(ctx context.Context, id string) (*ModelEntry, error) {
 		return nil, err
 	}
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get model failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get model failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &model, nil
 }
@@ -127,7 +127,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListModels, erro
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list models failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list models failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -149,7 +149,7 @@ func (c *Client) Create(ctx context.Context, createModel *ModelEntry) (*ModelEnt
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create model, got status code: %d", rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create model: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &createdModel, nil
 }
@@ -169,7 +169,7 @@ func (c *Client) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	if rsp.IsError() {
-		return fmt.Errorf("delete model failed with status code %d", rsp.StatusCode())
+		return fmt.Errorf("delete model failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return nil
 }

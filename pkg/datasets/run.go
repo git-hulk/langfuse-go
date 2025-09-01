@@ -81,7 +81,7 @@ func (c *Client) GetDatasetRuns(ctx context.Context, datasetName string, params 
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get dataset runs failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get dataset runs failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -108,7 +108,7 @@ func (c *Client) GetDatasetRun(ctx context.Context, datasetName, runName string)
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get dataset run failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get dataset run failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &datasetRun, nil
 }
@@ -135,7 +135,7 @@ func (c *Client) DeleteDatasetRun(ctx context.Context, datasetName, runName stri
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("delete dataset run failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("delete dataset run failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &deleteResponse, nil
 }

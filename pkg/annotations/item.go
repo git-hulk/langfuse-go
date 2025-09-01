@@ -153,7 +153,7 @@ func (c *ItemClient) Get(ctx context.Context, queueID, itemID string) (*Item, er
 		return nil, err
 	}
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get annotation queue item failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get annotation queue item failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &item, nil
 }
@@ -176,7 +176,7 @@ func (c *ItemClient) List(ctx context.Context, queueID string, params ItemListPa
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list annotation queue items failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list annotation queue items failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }

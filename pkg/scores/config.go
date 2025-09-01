@@ -140,7 +140,7 @@ func (c *Client) CreateConfig(ctx context.Context, createConfig *CreateScoreConf
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create score config, got status code: %d", rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create score config: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &createdConfig, nil
 }
@@ -158,7 +158,7 @@ func (c *Client) ListConfigs(ctx context.Context, params ConfigListParams) (*Lis
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list score configs failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list score configs failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -181,7 +181,7 @@ func (c *Client) GetConfig(ctx context.Context, configID string) (*ScoreConfig, 
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get score config failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get score config failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &config, nil
 }

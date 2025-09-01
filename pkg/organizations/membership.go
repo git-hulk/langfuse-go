@@ -88,7 +88,7 @@ func (c *Client) ListMemberships(ctx context.Context) (*MembershipsResponse, err
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get organization memberships failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get organization memberships failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &memberships, nil
 }
@@ -135,7 +135,7 @@ func (c *Client) ListProjectMemberships(ctx context.Context, projectId string) (
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get project memberships failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get project memberships failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &memberships, nil
 }
@@ -163,7 +163,7 @@ func (c *Client) UpdateProjectMembership(ctx context.Context, projectId string, 
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to update project membershipx, got status code: %d", rsp.StatusCode())
+		return nil, fmt.Errorf("failed to update project membership: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &updatedMembership, nil
 }

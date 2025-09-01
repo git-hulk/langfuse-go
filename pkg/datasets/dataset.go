@@ -115,7 +115,7 @@ func (c *Client) Get(ctx context.Context, datasetName string) (*Dataset, error) 
 		return nil, err
 	}
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get dataset failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get dataset failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &dataset, nil
 }
@@ -133,7 +133,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListDatasets, er
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list datasets failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list datasets failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -155,8 +155,8 @@ func (c *Client) Create(ctx context.Context, createDataset *CreateDatasetRequest
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create dataset, got status code: %d",
-			rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create dataset: %s, got status code: %d",
+			rsp.String(), rsp.StatusCode())
 	}
 	return &createdDataset, nil
 }

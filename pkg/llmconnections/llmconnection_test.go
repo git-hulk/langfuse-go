@@ -255,7 +255,7 @@ func TestClient_ListError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "list LLM connections failed with status code 500")
+	assert.Contains(t, err.Error(), "list LLM connections failed: , got status code: 500")
 }
 
 func TestClient_UpsertError(t *testing.T) {

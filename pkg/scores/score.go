@@ -233,7 +233,7 @@ func (c *Client) List(ctx context.Context, params ListParams) (*ListScores, erro
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list scores failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list scores failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -256,7 +256,7 @@ func (c *Client) Get(ctx context.Context, scoreID string) (*Score, error) {
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get score failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get score failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &score, nil
 }
@@ -299,7 +299,7 @@ func (c *Client) Delete(ctx context.Context, scoreID string) error {
 		return err
 	}
 	if rsp.IsError() {
-		return fmt.Errorf("delete score failed with status code %d", rsp.StatusCode())
+		return fmt.Errorf("delete score failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return nil
 }

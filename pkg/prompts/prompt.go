@@ -167,7 +167,7 @@ func (c *Client) Get(ctx context.Context, params GetParams) (*PromptEntry, error
 		return nil, err
 	}
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get prompt failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get prompt failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &prompt, nil
 }
@@ -185,7 +185,7 @@ func (c Client) List(ctx context.Context, params ListParams) (*ListPrompts, erro
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list prompts failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list prompts failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -210,7 +210,7 @@ func (c *Client) Create(ctx context.Context, createPrompt *PromptEntry) (*Prompt
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create prompt, got status code: %d", rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create prompt: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &createdPrompt, nil
 }

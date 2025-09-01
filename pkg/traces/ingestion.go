@@ -164,7 +164,7 @@ func (ingestor *Ingestor) Send(ctx context.Context, traces []*Trace) error {
 		return fmt.Errorf("ingestion errors: %v", ingestResponse.Errors)
 	}
 	if rsp.IsError() {
-		return fmt.Errorf("send traces got unxpected status code: %d", rsp.StatusCode())
+		return fmt.Errorf("send traces got unexpected status code: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return nil
 }

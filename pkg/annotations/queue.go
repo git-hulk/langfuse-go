@@ -131,7 +131,7 @@ func (c *QueueClient) Get(ctx context.Context, queueID string) (*Queue, error) {
 		return nil, err
 	}
 	if rsp.IsError() {
-		return nil, fmt.Errorf("get annotation queue failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("get annotation queue failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &queue, nil
 }
@@ -149,7 +149,7 @@ func (c *QueueClient) List(ctx context.Context, params QueueListParams) (*ListQu
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("list annotation queues failed with status code %d", rsp.StatusCode())
+		return nil, fmt.Errorf("list annotation queues failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 	return &listResponse, nil
 }
@@ -171,8 +171,8 @@ func (c *QueueClient) Create(ctx context.Context, createRequest *CreateQueueRequ
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create annotation queue, got status code: %d",
-			rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create annotation queue: %s, got status code: %d",
+			rsp.String(), rsp.StatusCode())
 	}
 	return &createdQueue, nil
 }
@@ -198,8 +198,8 @@ func (c *QueueClient) CreateAssignment(ctx context.Context, queueID string, requ
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to create assignment, got status code: %d",
-			rsp.StatusCode())
+		return nil, fmt.Errorf("failed to create assignment: %s, got status code: %d",
+			rsp.String(), rsp.StatusCode())
 	}
 	return &assignmentResponse, nil
 }
@@ -225,8 +225,8 @@ func (c *QueueClient) DeleteAssignment(ctx context.Context, queueID string, requ
 	}
 
 	if rsp.IsError() {
-		return nil, fmt.Errorf("failed to delete assignment, got status code: %d",
-			rsp.StatusCode())
+		return nil, fmt.Errorf("failed to delete assignment: %s, got status code: %d",
+			rsp.String(), rsp.StatusCode())
 	}
 	return &deleteResponse, nil
 }
