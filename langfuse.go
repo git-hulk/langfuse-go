@@ -36,7 +36,7 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/traces"
 )
 
-// LangFuse is the main client for interacting with the Langfuse platform.
+// Langfuse is the main client for interacting with the Langfuse platform.
 //
 // It provides access to all Langfuse functionality including tracing, prompts,
 // models, datasets, sessions, scores, projects, LLM connections, comments,
@@ -44,7 +44,7 @@ import (
 //
 // The client manages HTTP connections and provides efficient batch processing
 // for trace ingestion with automatic flushing and graceful shutdown capabilities.
-type LangFuse struct {
+type Langfuse struct {
 	ingestor      *traces.Ingestor
 	prompt        *prompts.Client
 	model         *models.Client
@@ -60,19 +60,19 @@ type LangFuse struct {
 	restyCli      *resty.Client
 }
 
-// NewClient creates a new LangFuse client instance with the specified host and credentials.
+// NewClient creates a new Langfuse client instance with the specified host and credentials.
 //
 // The host should be the base URL of your Langfuse instance (e.g., "https://cloud.langfuse.com").
 // The publicKey and secretKey are obtained from your Langfuse project settings.
 //
 // The client automatically configures HTTP basic authentication and sets the API base URL.
 // Remember to call Close() when done to ensure all pending traces are flushed.
-func NewClient(host string, publicKey string, secretKey string) *LangFuse {
+func NewClient(host string, publicKey string, secretKey string) *Langfuse {
 	restyCli := resty.New().
 		SetBaseURL(host+"/api/public").
 		SetBasicAuth(publicKey, secretKey)
 
-	return &LangFuse{
+	return &Langfuse{
 		ingestor:      traces.NewIngestor(restyCli),
 		prompt:        prompts.NewClient(restyCli),
 		model:         models.NewClient(restyCli),
@@ -89,7 +89,7 @@ func NewClient(host string, publicKey string, secretKey string) *LangFuse {
 	}
 }
 
-func (c *LangFuse) Flush() {
+func (c *Langfuse) Flush() {
 	c.ingestor.Flush()
 }
 
@@ -100,7 +100,7 @@ func (c *LangFuse) Flush() {
 // Langfuse for efficient ingestion.
 //
 // Returns a Trace instance that you can use to add observations and metadata.
-func (c *LangFuse) StartTrace(ctx context.Context, name string) *traces.Trace {
+func (c *Langfuse) StartTrace(ctx context.Context, name string) *traces.Trace {
 	return c.ingestor.StartTrace(ctx, name)
 }
 
@@ -108,7 +108,7 @@ func (c *LangFuse) StartTrace(ctx context.Context, name string) *traces.Trace {
 //
 // Use this client to create, retrieve, list, and manage prompt templates
 // for your AI applications.
-func (c *LangFuse) Prompts() *prompts.Client {
+func (c *Langfuse) Prompts() *prompts.Client {
 	return c.prompt
 }
 
@@ -116,7 +116,7 @@ func (c *LangFuse) Prompts() *prompts.Client {
 //
 // Use this client to define model pricing, match patterns, and manage
 // model metadata for cost tracking and analytics.
-func (c *LangFuse) Models() *models.Client {
+func (c *Langfuse) Models() *models.Client {
 	return c.model
 }
 
@@ -124,7 +124,7 @@ func (c *LangFuse) Models() *models.Client {
 //
 // Use this client to create, update, and manage projects, as well as
 // manage API keys within projects. Most operations require organization-scoped API keys.
-func (c *LangFuse) Projects() *projects.Client {
+func (c *Langfuse) Projects() *projects.Client {
 	return c.project
 }
 
@@ -132,7 +132,7 @@ func (c *LangFuse) Projects() *projects.Client {
 //
 // Use this client to add contextual comments to your traces and observations
 // for collaboration and debugging purposes.
-func (c *LangFuse) Comments() *comments.Client {
+func (c *Langfuse) Comments() *comments.Client {
 	return c.comment
 }
 
@@ -140,7 +140,7 @@ func (c *LangFuse) Comments() *comments.Client {
 //
 // Use this client to create and manage datasets for training, evaluation,
 // and testing of your AI models, including dataset items and runs.
-func (c *LangFuse) Datasets() *datasets.Client {
+func (c *Langfuse) Datasets() *datasets.Client {
 	return c.dataset
 }
 
@@ -148,7 +148,7 @@ func (c *LangFuse) Datasets() *datasets.Client {
 //
 // Use this client to retrieve and analyze user sessions, including
 // filtering by time ranges and environments.
-func (c *LangFuse) Sessions() *sessions.Client {
+func (c *Langfuse) Sessions() *sessions.Client {
 	return c.session
 }
 
@@ -156,7 +156,7 @@ func (c *LangFuse) Sessions() *sessions.Client {
 //
 // Use this client to create, retrieve, and manage scores for your traces
 // and observations, including score configurations for different data types.
-func (c *LangFuse) Scores() *scores.Client {
+func (c *Langfuse) Scores() *scores.Client {
 	return c.score
 }
 
@@ -164,7 +164,7 @@ func (c *LangFuse) Scores() *scores.Client {
 //
 // Use this client to configure connections to various LLM providers
 // like OpenAI, Anthropic, Azure OpenAI, AWS Bedrock, and Google Vertex AI.
-func (c *LangFuse) LLMConnections() *llmconnections.Client {
+func (c *Langfuse) LLMConnections() *llmconnections.Client {
 	return c.llmConnection
 }
 
@@ -172,14 +172,14 @@ func (c *LangFuse) LLMConnections() *llmconnections.Client {
 //
 // Use this client to manage user roles and permissions within organizations
 // and projects. Most operations require organization-scoped API keys.
-func (c *LangFuse) Organizations() *organizations.Client {
+func (c *Langfuse) Organizations() *organizations.Client {
 	return c.organization
 }
 
 // Health returns a client for checking API health status and version.
 //
 // Use this client to verify connectivity and server status.
-func (c *LangFuse) Health() *health.Client {
+func (c *Langfuse) Health() *health.Client {
 	return c.health
 }
 
@@ -188,7 +188,7 @@ func (c *LangFuse) Health() *health.Client {
 // Use this client to upload, retrieve, and manage media files including images, audio,
 // video, and documents. Media files are associated with traces and observations through
 // their input, output, or metadata fields.
-func (c *LangFuse) Media() *media.Client {
+func (c *Langfuse) Media() *media.Client {
 	return c.media
 }
 
@@ -199,6 +199,6 @@ func (c *LangFuse) Media() *media.Client {
 // typically in a defer statement.
 //
 // Returns an error if the shutdown process fails or times out.
-func (c *LangFuse) Close() error {
+func (c *Langfuse) Close() error {
 	return c.ingestor.Close()
 }

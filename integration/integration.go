@@ -43,7 +43,7 @@ func printInfo(format string, args ...interface{}) {
 	fmt.Printf(ColorBlue+format+ColorReset, args...)
 }
 
-func runTraceTests(client *langfuse.LangFuse) {
+func runTraceTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	sessionID := uuid.Must(uuid.NewV4())
 	for i := 0; i < 3; i++ {
@@ -70,7 +70,7 @@ func runTraceTests(client *langfuse.LangFuse) {
 	}
 }
 
-func runModelTests(client *langfuse.LangFuse) {
+func runModelTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	modelClient := client.Models()
 
@@ -131,7 +131,7 @@ func runModelTests(client *langfuse.LangFuse) {
 	fmt.Println("Model API tests completed!")
 }
 
-func runPromptTests(client *langfuse.LangFuse) {
+func runPromptTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	promptClient := client.Prompts()
 
@@ -197,7 +197,7 @@ func runPromptTests(client *langfuse.LangFuse) {
 	fmt.Println("Prompt API tests completed!")
 }
 
-func runScoreTests(client *langfuse.LangFuse) {
+func runScoreTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	scoreClient := client.Scores()
 
@@ -270,7 +270,7 @@ func runScoreTests(client *langfuse.LangFuse) {
 	fmt.Println("Score API tests completed!")
 }
 
-func runScoreConfigTests(client *langfuse.LangFuse) {
+func runScoreConfigTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	scoreClient := client.Scores()
 
@@ -368,7 +368,7 @@ func runScoreConfigTests(client *langfuse.LangFuse) {
 	fmt.Println("Score Config API tests completed!")
 }
 
-func runDatasetTests(client *langfuse.LangFuse) {
+func runDatasetTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	datasetClient := client.Datasets()
 
@@ -420,7 +420,7 @@ func runDatasetTests(client *langfuse.LangFuse) {
 	fmt.Println("Dataset API tests completed!")
 }
 
-func runDatasetItemTests(client *langfuse.LangFuse) {
+func runDatasetItemTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	datasetClient := client.Datasets()
 
@@ -522,7 +522,7 @@ func runDatasetItemTests(client *langfuse.LangFuse) {
 	fmt.Println("Dataset Item API tests completed!")
 }
 
-func runDatasetRunTests(client *langfuse.LangFuse) {
+func runDatasetRunTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	datasetClient := client.Datasets()
 
@@ -582,7 +582,7 @@ func runDatasetRunTests(client *langfuse.LangFuse) {
 	fmt.Println("Dataset Run API tests completed!")
 }
 
-func runLLMConnectionTests(client *langfuse.LangFuse) {
+func runLLMConnectionTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	llmClient := client.LLMConnections()
 
@@ -688,7 +688,7 @@ func runLLMConnectionTests(client *langfuse.LangFuse) {
 	fmt.Println("LLM Connection API tests completed!")
 }
 
-func runOrganizationTests(client *langfuse.LangFuse) {
+func runOrganizationTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	fmt.Println("Testing Organization API...")
 
@@ -776,7 +776,7 @@ func runOrganizationTests(client *langfuse.LangFuse) {
 	fmt.Println("Note: Full functionality requires organization-scoped API keys")
 }
 
-func runProjectTests(client *langfuse.LangFuse) {
+func runProjectTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	projectClient := client.Projects()
 
@@ -886,7 +886,7 @@ func runProjectTests(client *langfuse.LangFuse) {
 	fmt.Println("Note: Full project management functionality requires organization-scoped API keys")
 }
 
-func runCommentTests(client *langfuse.LangFuse) {
+func runCommentTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	commentClient := client.Comments()
 
@@ -1041,7 +1041,7 @@ func runCommentTests(client *langfuse.LangFuse) {
 	fmt.Println("Comment API tests completed!")
 }
 
-func runMediaTests(client *langfuse.LangFuse) {
+func runMediaTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	mediaClient := client.Media()
 
@@ -1132,7 +1132,7 @@ func runMediaTests(client *langfuse.LangFuse) {
 	fmt.Println("Media API tests completed!")
 }
 
-func runAnnotationTests(client *langfuse.LangFuse) {
+func runAnnotationTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 
 	// Create annotation clients directly since they're not exposed through the main client
