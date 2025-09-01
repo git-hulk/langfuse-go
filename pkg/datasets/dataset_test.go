@@ -28,7 +28,7 @@ func TestCreateDatasetRequest_validate(t *testing.T) {
 			request: CreateDatasetRequest{
 				Name:        "test-dataset",
 				Description: "A test dataset",
-				Metadata:    map[string]interface{}{"version": "1.0"},
+				Metadata:    map[string]any{"version": "1.0"},
 			},
 			wantErr: false,
 		},
@@ -119,7 +119,7 @@ func TestClient_Get(t *testing.T) {
 				ID:          "dataset-123",
 				Name:        datasetName,
 				Description: "Test dataset description",
-				Metadata:    map[string]interface{}{"version": "1.0"},
+				Metadata:    map[string]any{"version": "1.0"},
 				ProjectID:   "project-456",
 				CreatedAt:   mustParseTime("2023-01-01T10:00:00Z"),
 				UpdatedAt:   mustParseTime("2023-01-02T11:00:00Z"),
@@ -294,7 +294,7 @@ func TestClient_Create(t *testing.T) {
 		createReq := &CreateDatasetRequest{
 			Name:        "new-dataset",
 			Description: "A new test dataset",
-			Metadata:    map[string]interface{}{"version": "1.0"},
+			Metadata:    map[string]any{"version": "1.0"},
 		}
 
 		result, err := datasetClient.Create(ctx, createReq)

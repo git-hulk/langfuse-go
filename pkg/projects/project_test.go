@@ -137,7 +137,7 @@ func TestProjectClient_Create(t *testing.T) {
 
 	createReq := &CreateProjectRequest{
 		Name:      "test-project",
-		Metadata:  map[string]interface{}{"key": "value"},
+		Metadata:  map[string]any{"key": "value"},
 		Retention: 30,
 	}
 
@@ -188,7 +188,7 @@ func TestProjectClient_Update(t *testing.T) {
 
 	updateReq := &UpdateProjectRequest{
 		Name:      "updated-project",
-		Metadata:  map[string]interface{}{"updated": "true"},
+		Metadata:  map[string]any{"updated": "true"},
 		Retention: 60,
 	}
 

@@ -297,8 +297,8 @@ func TestClient_Get(t *testing.T) {
 						Name:      "test-trace",
 						Timestamp: mustParseTime("2023-01-01T10:05:00Z"),
 						SessionID: sessionID,
-						Input:     map[string]interface{}{"query": "test"},
-						Output:    map[string]interface{}{"response": "result"},
+						Input:     map[string]any{"query": "test"},
+						Output:    map[string]any{"response": "result"},
 					},
 					{
 						ID:        "trace-2",

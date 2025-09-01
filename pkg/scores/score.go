@@ -67,7 +67,7 @@ type Score struct {
 	Comment       string            `json:"comment,omitempty"`
 	AuthorUserID  string            `json:"authorUserId,omitempty"`
 	QueueID       string            `json:"queueId,omitempty"`
-	Metadata      interface{}       `json:"metadata,omitempty"`
+	Metadata      any               `json:"metadata,omitempty"`
 	Trace         traces.TraceEntry `json:"trace,omitempty"`
 }
 
@@ -84,7 +84,7 @@ type CreateScoreRequest struct {
 	DatasetRunID  string        `json:"datasetRunId,omitempty"`
 	DataType      ScoreDataType `json:"dataType,omitempty"`
 	Name          string        `json:"name"`
-	Value         interface{}   `json:"value"` // Can be numeric (float64) or string
+	Value         any           `json:"value"` // Can be numeric (float64) or string
 	Comment       string        `json:"comment,omitempty"`
 	ConfigID      string        `json:"configId,omitempty"`
 	Environment   string        `json:"environment,omitempty"`

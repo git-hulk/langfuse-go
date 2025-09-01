@@ -23,16 +23,16 @@ func TestCreateDatasetItemRequest_validate(t *testing.T) {
 			name: "valid request",
 			request: CreateDatasetItemRequest{
 				DatasetName:    "test-dataset",
-				Input:          map[string]interface{}{"text": "hello world"},
-				ExpectedOutput: map[string]interface{}{"response": "hello back"},
+				Input:          map[string]any{"text": "hello world"},
+				ExpectedOutput: map[string]any{"response": "hello back"},
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing dataset name",
 			request: CreateDatasetItemRequest{
-				Input:          map[string]interface{}{"text": "hello world"},
-				ExpectedOutput: map[string]interface{}{"response": "hello back"},
+				Input:          map[string]any{"text": "hello world"},
+				ExpectedOutput: map[string]any{"response": "hello back"},
 			},
 			wantErr: true,
 		},
@@ -40,8 +40,8 @@ func TestCreateDatasetItemRequest_validate(t *testing.T) {
 			name: "empty dataset name",
 			request: CreateDatasetItemRequest{
 				DatasetName:    "",
-				Input:          map[string]interface{}{"text": "hello world"},
-				ExpectedOutput: map[string]interface{}{"response": "hello back"},
+				Input:          map[string]any{"text": "hello world"},
+				ExpectedOutput: map[string]any{"response": "hello back"},
 			},
 			wantErr: true,
 		},
@@ -133,8 +133,8 @@ func TestDatasetItemClientMethods(t *testing.T) {
 
 		validRequest := &CreateDatasetItemRequest{
 			DatasetName:    "test-dataset",
-			Input:          map[string]interface{}{"text": "hello world"},
-			ExpectedOutput: map[string]interface{}{"response": "hello back"},
+			Input:          map[string]any{"text": "hello world"},
+			ExpectedOutput: map[string]any{"response": "hello back"},
 		}
 		err = validRequest.validate()
 		require.NoError(t, err)
@@ -146,9 +146,9 @@ func TestDatasetItemStructures(t *testing.T) {
 		item := DatasetItem{
 			ID:             "item-123",
 			DatasetName:    "test-dataset",
-			Input:          map[string]interface{}{"text": "hello"},
-			ExpectedOutput: map[string]interface{}{"response": "hi"},
-			Metadata:       map[string]interface{}{"model": "gpt-4"},
+			Input:          map[string]any{"text": "hello"},
+			ExpectedOutput: map[string]any{"response": "hi"},
+			Metadata:       map[string]any{"model": "gpt-4"},
 		}
 
 		require.Equal(t, "item-123", item.ID)
@@ -160,7 +160,7 @@ func TestDatasetItemStructures(t *testing.T) {
 			DatasetName:         "test-dataset",
 			Input:               "simple string input",
 			ExpectedOutput:      "simple string output",
-			Metadata:            map[string]interface{}{"version": "1.0"},
+			Metadata:            map[string]any{"version": "1.0"},
 			ID:                  "custom-id",
 			SourceTraceID:       "trace-123",
 			SourceObservationID: "obs-456",
@@ -198,17 +198,17 @@ func TestDatasetItemClient_List(t *testing.T) {
 					{
 						ID:             "item-1",
 						DatasetName:    "test-dataset",
-						Input:          map[string]interface{}{"text": "hello"},
-						ExpectedOutput: map[string]interface{}{"response": "hi"},
-						Metadata:       map[string]interface{}{"model": "gpt-4"},
+						Input:          map[string]any{"text": "hello"},
+						ExpectedOutput: map[string]any{"response": "hi"},
+						Metadata:       map[string]any{"model": "gpt-4"},
 						Status:         "active",
 					},
 					{
 						ID:             "item-2",
 						DatasetName:    "test-dataset",
-						Input:          map[string]interface{}{"text": "goodbye"},
-						ExpectedOutput: map[string]interface{}{"response": "bye"},
-						Metadata:       map[string]interface{}{"model": "gpt-3.5"},
+						Input:          map[string]any{"text": "goodbye"},
+						ExpectedOutput: map[string]any{"response": "bye"},
+						Metadata:       map[string]any{"model": "gpt-3.5"},
 						Status:         "active",
 					},
 				},

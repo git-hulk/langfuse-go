@@ -107,7 +107,7 @@ func TestTrace_Fields(t *testing.T) {
 			Release:     "v1.0.0",
 			Version:     "1.0",
 			UserID:      "user-456",
-			Metadata:    map[string]interface{}{"key": "value"},
+			Metadata:    map[string]any{"key": "value"},
 			Tags:        []string{"tag1", "tag2"},
 			TotalCost:   0.05,
 			Environment: "test",
@@ -120,7 +120,7 @@ func TestTrace_Fields(t *testing.T) {
 	assert.Equal(t, "v1.0.0", trace.Release)
 	assert.Equal(t, "1.0", trace.Version)
 	assert.Equal(t, "user-456", trace.UserID)
-	assert.Equal(t, map[string]interface{}{"key": "value"}, trace.Metadata)
+	assert.Equal(t, map[string]any{"key": "value"}, trace.Metadata)
 	assert.Equal(t, []string{"tag1", "tag2"}, trace.Tags)
 	assert.Equal(t, 0.05, trace.TotalCost)
 	assert.Equal(t, "test", trace.Environment)

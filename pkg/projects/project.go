@@ -19,10 +19,10 @@ import (
 // Projects are containers for traces, datasets, prompts, and other Langfuse resources.
 // They can have custom metadata and data retention policies.
 type Project struct {
-	ID            string                 `json:"id,omitempty"`
-	Name          string                 `json:"name"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	RetentionDays int                    `json:"retentionDays,omitempty"`
+	ID            string         `json:"id,omitempty"`
+	Name          string         `json:"name"`
+	Metadata      map[string]any `json:"metadata,omitempty"`
+	RetentionDays int            `json:"retentionDays,omitempty"`
 }
 
 // CreateProjectRequest represents the parameters for creating a new project.
@@ -30,18 +30,18 @@ type Project struct {
 // Name is required. Metadata can contain custom key-value pairs.
 // Retention specifies the data retention period in days.
 type CreateProjectRequest struct {
-	Name      string                 `json:"name"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-	Retention int                    `json:"retention"`
+	Name      string         `json:"name"`
+	Metadata  map[string]any `json:"metadata,omitempty"`
+	Retention int            `json:"retention"`
 }
 
 // UpdateProjectRequest represents the parameters for updating an existing project.
 //
 // All fields are optional and only provided fields will be updated.
 type UpdateProjectRequest struct {
-	Name      string                 `json:"name"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-	Retention int                    `json:"retention"`
+	Name      string         `json:"name"`
+	Metadata  map[string]any `json:"metadata,omitempty"`
+	Retention int            `json:"retention"`
 }
 
 // ProjectDeletionResponse represents the response from deleting a project.

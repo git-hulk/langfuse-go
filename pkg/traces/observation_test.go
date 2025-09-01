@@ -35,10 +35,10 @@ func TestObservation_Fields(t *testing.T) {
 		Type:                ObservationTypeGeneration,
 		Name:                "test-generation",
 		Model:               "gpt-4",
-		ModelParameters:     map[string]interface{}{"temperature": 0.7},
+		ModelParameters:     map[string]any{"temperature": 0.7},
 		Input:               "test input",
 		Version:             "1.0",
-		Metadata:            map[string]interface{}{"key": "value"},
+		Metadata:            map[string]any{"key": "value"},
 		Output:              "test output",
 		Usage:               *usage,
 		Level:               ObservationLevelDefault,
@@ -52,10 +52,10 @@ func TestObservation_Fields(t *testing.T) {
 	assert.Equal(t, ObservationTypeGeneration, observation.Type)
 	assert.Equal(t, "test-generation", observation.Name)
 	assert.Equal(t, "gpt-4", observation.Model)
-	assert.Equal(t, map[string]interface{}{"temperature": 0.7}, observation.ModelParameters)
+	assert.Equal(t, map[string]any{"temperature": 0.7}, observation.ModelParameters)
 	assert.Equal(t, "test input", observation.Input)
 	assert.Equal(t, "1.0", observation.Version)
-	assert.Equal(t, map[string]interface{}{"key": "value"}, observation.Metadata)
+	assert.Equal(t, map[string]any{"key": "value"}, observation.Metadata)
 	assert.Equal(t, "test output", observation.Output)
 	assert.Equal(t, *usage, observation.Usage)
 	assert.Equal(t, ObservationLevelDefault, observation.Level)

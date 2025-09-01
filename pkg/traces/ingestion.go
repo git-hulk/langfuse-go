@@ -148,7 +148,7 @@ func (ingestor *Ingestor) Send(ctx context.Context, traces []*Trace) error {
 	events := ingestor.TracesToEvents(traces)
 	rsp, err := ingestor.restyCli.R().
 		SetContext(ctx).
-		SetBody(map[string]interface{}{"batch": events}).
+		SetBody(map[string]any{"batch": events}).
 		Post("/ingestion")
 	if err != nil {
 		return err
