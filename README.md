@@ -9,6 +9,9 @@ Go client & SDK for interacting with [Langfuse](https://langfuse.com/). Provides
     - [Tracing](#tracing)
     - [Sessions](#sessions)
     - [Comments](#comments)
+  - [Platform APIs](#platform-apis)
+    - [Media](#media)
+    - [Health](#health)
   - [AI/ML Management](#aiml-management)
     - [Prompts](#prompts)
     - [Models](#models)
@@ -292,6 +295,83 @@ func main() {
         Page:  1,
         Limit: 20,
     })
+}
+```
+
+## Platform APIs
+
+Utility APIs for media file management and platform health monitoring.
+
+### Media
+
+```go
+import (
+    "context"
+    "os"
+
+    langfuse "github.com/git-hulk/langfuse-go"
+    "github.com/git-hulk/langfuse-go/pkg/media"
+)
+
+func main() {
+    langfuse := langfuse.NewClient("YOUR_HOST", "YOUR_PUBLIC_KEY", "YOUR_PRIVATE_KEY")
+
+    ctx := context.Background()
+
+    // Upload a file from filesystem
+    uploadResp, err := langfuse.Media().UploadFile(ctx, &media.UploadFileRequest{
+        TraceID:     "trace-123",
+        Field:       "input",
+        FilePath:    "./image.png",
+        ContentType: media.ContentTypeImagePNG, // Optional, auto-detected if not provided
+    })
+
+    // Upload from byte data
+    imageData, _ := os.ReadFile("./image.jpg")
+    uploadResp, err = langfuse.Media().UploadFromBytes(ctx, &media.UploadFromBytesRequest{
+        TraceID:     "trace-123",
+        Field:       "output",
+        ContentType: media.ContentTypeImageJPEG,
+        Data:        imageData,
+    })
+
+    // Get media record
+    mediaRecord, err := langfuse.Media().Get(ctx, uploadResp.MediaID)
+
+    // Get presigned upload URL for custom upload flow
+    uploadURL, err := langfuse.Media().GetUploadURL(ctx, &media.GetUploadURLRequest{
+        TraceID:       "trace-123",
+        ContentType:   media.ContentTypeImagePNG,
+        ContentLength: len(imageData),
+        SHA256Hash:    "base64-encoded-sha256-hash",
+        Field:         "metadata",
+    })
+}
+```
+
+### Health
+
+```go
+import (
+    "context"
+    "fmt"
+
+    langfuse "github.com/git-hulk/langfuse-go"
+)
+
+func main() {
+    langfuse := langfuse.NewClient("YOUR_HOST", "YOUR_PUBLIC_KEY", "YOUR_PRIVATE_KEY")
+
+    ctx := context.Background()
+
+    // Check API health and version
+    health, err := langfuse.Health().Check(ctx)
+    if err != nil {
+        fmt.Printf("Health check failed: %v\n", err)
+        return
+    }
+    
+    fmt.Printf("Status: %s, Version: %s\n", health.Status, health.Version)
 }
 ```
 

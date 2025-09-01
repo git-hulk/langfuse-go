@@ -205,7 +205,7 @@ func TestClient_Upsert(t *testing.T) {
 		SecretKey:         "sk-test123",
 		BaseURL:           "https://api.openai.com/v1",
 		CustomModels:      []string{"gpt-4", "gpt-3.5-turbo"},
-		WithDefaultModels: &withDefaultModels,
+		WithDefaultModels: withDefaultModels,
 		ExtraHeaders:      map[string]string{},
 	}
 

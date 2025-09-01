@@ -40,7 +40,7 @@ func TestObservation_Fields(t *testing.T) {
 		Version:             "1.0",
 		Metadata:            map[string]interface{}{"key": "value"},
 		Output:              "test output",
-		Usage:               usage,
+		Usage:               *usage,
 		Level:               ObservationLevelDefault,
 		StatusMessage:       "completed",
 		ParentObservationID: "parent-789",
@@ -57,7 +57,7 @@ func TestObservation_Fields(t *testing.T) {
 	assert.Equal(t, "1.0", observation.Version)
 	assert.Equal(t, map[string]interface{}{"key": "value"}, observation.Metadata)
 	assert.Equal(t, "test output", observation.Output)
-	assert.Equal(t, usage, observation.Usage)
+	assert.Equal(t, *usage, observation.Usage)
 	assert.Equal(t, ObservationLevelDefault, observation.Level)
 	assert.Equal(t, "completed", observation.StatusMessage)
 	assert.Equal(t, "parent-789", observation.ParentObservationID)

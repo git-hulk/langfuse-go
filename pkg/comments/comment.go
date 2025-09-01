@@ -44,7 +44,7 @@ type CommentEntry struct {
 	ObjectType   CommentObjectType `json:"objectType"`
 	ObjectID     string            `json:"objectId"`
 	Content      string            `json:"content"`
-	AuthorUserID *string           `json:"authorUserId,omitempty"`
+	AuthorUserID string            `json:"authorUserId,omitempty"`
 }
 
 func (c *CommentEntry) validate() error {
@@ -69,7 +69,7 @@ type CreateCommentRequest struct {
 	ObjectType   CommentObjectType `json:"objectType"`
 	ObjectID     string            `json:"objectId"`
 	Content      string            `json:"content"`
-	AuthorUserID *string           `json:"authorUserId,omitempty"`
+	AuthorUserID string            `json:"authorUserId,omitempty"`
 }
 
 func (c *CreateCommentRequest) validate() error {

@@ -22,7 +22,7 @@ type Project struct {
 	ID            string                 `json:"id,omitempty"`
 	Name          string                 `json:"name"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	RetentionDays *int                   `json:"retentionDays,omitempty"`
+	RetentionDays int                    `json:"retentionDays,omitempty"`
 }
 
 // CreateProjectRequest represents the parameters for creating a new project.
@@ -57,13 +57,13 @@ type ProjectsResponse struct {
 
 // APIKeySummary represents summary information about an API key.
 type APIKeySummary struct {
-	ID               string     `json:"id"`
-	CreatedAt        time.Time  `json:"createdAt"`
-	ExpiresAt        *time.Time `json:"expiresAt,omitempty"`
-	LastUsedAt       *time.Time `json:"lastUsedAt,omitempty"`
-	Note             *string    `json:"note,omitempty"`
-	PublicKey        string     `json:"publicKey"`
-	DisplaySecretKey string     `json:"displaySecretKey"`
+	ID               string    `json:"id"`
+	CreatedAt        time.Time `json:"createdAt"`
+	ExpiresAt        time.Time `json:"expiresAt,omitempty"`
+	LastUsedAt       time.Time `json:"lastUsedAt,omitempty"`
+	Note             string    `json:"note,omitempty"`
+	PublicKey        string    `json:"publicKey"`
+	DisplaySecretKey string    `json:"displaySecretKey"`
 }
 
 // APIKeyList represents a list of API keys for a project.
@@ -78,12 +78,12 @@ type APIKeyResponse struct {
 	PublicKey        string    `json:"publicKey"`
 	SecretKey        string    `json:"secretKey"`
 	DisplaySecretKey string    `json:"displaySecretKey"`
-	Note             *string   `json:"note,omitempty"`
+	Note             string    `json:"note,omitempty"`
 }
 
 // CreateAPIKeyRequest represents the request payload for creating an API key.
 type CreateAPIKeyRequest struct {
-	Note *string `json:"note,omitempty"`
+	Note string `json:"note,omitempty"`
 }
 
 // APIKeyDeletionResponse represents the response from deleting an API key.

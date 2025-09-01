@@ -596,14 +596,14 @@ func runLLMConnectionTests(client *langfuse.LangFuse) {
 			Provider:          "test-openai-provider",
 			Adapter:           llmconnections.AdapterOpenAI,
 			SecretKey:         "test-openai-secret-key",
-			WithDefaultModels: boolPtr(true),
+			WithDefaultModels: true,
 			CustomModels:      []string{"gpt-4-custom", "gpt-3.5-custom"},
 		},
 		{
 			Provider:          "test-anthropic-provider",
 			Adapter:           llmconnections.AdapterAnthropic,
 			SecretKey:         "test-anthropic-secret-key",
-			WithDefaultModels: boolPtr(true),
+			WithDefaultModels: true,
 			CustomModels:      []string{"claude-3-custom"},
 		},
 		{
@@ -620,21 +620,21 @@ func runLLMConnectionTests(client *langfuse.LangFuse) {
 			Provider:          "test-bedrock-provider",
 			Adapter:           llmconnections.AdapterBedrock,
 			SecretKey:         "test-bedrock-secret-key",
-			WithDefaultModels: boolPtr(false),
+			WithDefaultModels: false,
 			CustomModels:      []string{"anthropic.claude-3-sonnet-20240229-v1:0"},
 		},
 		{
 			Provider:          "test-vertex-provider",
 			Adapter:           llmconnections.AdapterGoogleVertexAI,
 			SecretKey:         "test-vertex-secret-key",
-			WithDefaultModels: boolPtr(true),
+			WithDefaultModels: true,
 			CustomModels:      []string{"gemini-pro-custom"},
 		},
 		{
 			Provider:          "test-ai-studio-provider",
 			Adapter:           llmconnections.AdapterGoogleAIStudio,
 			SecretKey:         "test-ai-studio-secret-key",
-			WithDefaultModels: boolPtr(true),
+			WithDefaultModels: true,
 		},
 	}
 
@@ -674,7 +674,7 @@ func runLLMConnectionTests(client *langfuse.LangFuse) {
 			Provider:          createdConnections[0].Provider,
 			Adapter:           createdConnections[0].Adapter,
 			SecretKey:         "updated-secret-key",
-			WithDefaultModels: boolPtr(false),
+			WithDefaultModels: false,
 			CustomModels:      []string{"updated-model-1", "updated-model-2"},
 		}
 
@@ -793,8 +793,8 @@ func runProjectTests(client *langfuse.LangFuse) {
 		fmt.Printf("Found %d current project(s)\n", len(currentProjects.Data))
 		for i, project := range currentProjects.Data {
 			retentionInfo := "no retention set"
-			if project.RetentionDays != nil {
-				retentionInfo = fmt.Sprintf("%d days", *project.RetentionDays)
+			if project.RetentionDays != 0 {
+				retentionInfo = fmt.Sprintf("%d days", project.RetentionDays)
 			}
 			fmt.Printf("  %d. %s (ID: %s) - Retention: %s\n",
 				i+1, project.Name, project.ID, retentionInfo)
@@ -854,11 +854,11 @@ func runProjectTests(client *langfuse.LangFuse) {
 			fmt.Printf("Found %d API key(s) for project\n", len(apiKeys.ApiKeys))
 			for i, key := range apiKeys.ApiKeys {
 				noteInfo := "no note"
-				if key.Note != nil {
-					noteInfo = *key.Note
+				if key.Note != "" {
+					noteInfo = key.Note
 				}
 				lastUsedInfo := "never used"
-				if key.LastUsedAt != nil {
+				if !key.LastUsedAt.IsZero() {
 					lastUsedInfo = key.LastUsedAt.Format("2006-01-02 15:04:05")
 				}
 				fmt.Printf("  %d. %s (%s) - Note: %s, Last used: %s\n",
@@ -869,10 +869,10 @@ func runProjectTests(client *langfuse.LangFuse) {
 		// Test creating API key (demonstration only)
 		fmt.Println("Demonstrating API key creation request structure...")
 		testAPIKeyReq := &projects.CreateAPIKeyRequest{
-			Note: stringPtr("Integration test API key"),
+			Note: "Integration test API key",
 		}
 
-		fmt.Printf("Sample API key creation: Note=%s\n", *testAPIKeyReq.Note)
+		fmt.Printf("Sample API key creation: Note=%s\n", testAPIKeyReq.Note)
 
 		fmt.Println("Skipping actual API key creation to prevent unintended key creation")
 		fmt.Println("Note: API key creation requires organization-scoped API keys")
@@ -971,8 +971,8 @@ func runCommentTests(client *langfuse.LangFuse) {
 		fmt.Printf("Found %d comments for this trace\n", len(filteredResponse.Data))
 		for i, comment := range filteredResponse.Data {
 			authorInfo := "system"
-			if comment.AuthorUserID != nil {
-				authorInfo = *comment.AuthorUserID
+			if comment.AuthorUserID != "" {
+				authorInfo = comment.AuthorUserID
 			}
 			fmt.Printf("  %d. Author: %s - %s\n",
 				i+1, authorInfo, comment.Content)
@@ -1409,16 +1409,6 @@ func runAnnotationTests(client *langfuse.LangFuse) {
 
 	fmt.Println("Annotation API tests completed!")
 	fmt.Printf("Note: Created annotation queue %s may need manual cleanup\n", testQueueID)
-}
-
-// Helper function to create bool pointer
-func boolPtr(b bool) *bool {
-	return &b
-}
-
-// Helper function to create string pointer
-func stringPtr(s string) *string {
-	return &s
 }
 
 // Helper function to calculate base64 encoded SHA-256 hash of data

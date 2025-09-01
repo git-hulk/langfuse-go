@@ -64,7 +64,7 @@ type UpsertLLMConnectionRequest struct {
 	SecretKey         string            `json:"secretKey"`
 	BaseURL           string            `json:"baseURL,omitempty"`
 	CustomModels      []string          `json:"customModels,omitempty"`
-	WithDefaultModels *bool             `json:"withDefaultModels,omitempty"`
+	WithDefaultModels bool              `json:"withDefaultModels,omitempty"`
 	ExtraHeaders      map[string]string `json:"extraHeaders,omitempty"`
 }
 

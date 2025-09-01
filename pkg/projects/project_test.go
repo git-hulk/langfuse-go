@@ -123,7 +123,7 @@ func TestProjectClient_Create(t *testing.T) {
 				ID:            "created-project-id",
 				Name:          req.Name,
 				Metadata:      req.Metadata,
-				RetentionDays: &req.Retention,
+				RetentionDays: req.Retention,
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -145,7 +145,7 @@ func TestProjectClient_Create(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "created-project-id", project.ID)
 	require.Equal(t, "test-project", project.Name)
-	require.Equal(t, 30, *project.RetentionDays)
+	require.Equal(t, 30, project.RetentionDays)
 }
 
 func TestProjectClient_Create_ValidationError(t *testing.T) {
@@ -174,7 +174,7 @@ func TestProjectClient_Update(t *testing.T) {
 				ID:            "test-project-id",
 				Name:          req.Name,
 				Metadata:      req.Metadata,
-				RetentionDays: &req.Retention,
+				RetentionDays: req.Retention,
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -196,7 +196,7 @@ func TestProjectClient_Update(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "test-project-id", project.ID)
 	require.Equal(t, "updated-project", project.Name)
-	require.Equal(t, 60, *project.RetentionDays)
+	require.Equal(t, 60, project.RetentionDays)
 }
 
 func TestProjectClient_Update_MissingProjectID(t *testing.T) {
@@ -310,8 +310,8 @@ func TestProjectClient_CreateApiKey(t *testing.T) {
 			require.NoError(t, err)
 
 			note := "Test API Key"
-			if req.Note != nil {
-				note = *req.Note
+			if req.Note != "" {
+				note = req.Note
 			}
 
 			now := time.Now()
@@ -321,7 +321,7 @@ func TestProjectClient_CreateApiKey(t *testing.T) {
 				PublicKey:        "pk_test_new",
 				SecretKey:        "sk_test_secret_new",
 				DisplaySecretKey: "sk_test_***new",
-				Note:             &note,
+				Note:             note,
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -334,7 +334,7 @@ func TestProjectClient_CreateApiKey(t *testing.T) {
 	client := NewClient(cli)
 
 	note := "Test API Key"
-	createReq := &CreateAPIKeyRequest{Note: &note}
+	createReq := &CreateAPIKeyRequest{Note: note}
 
 	apiKey, err := client.CreateAPIKey(context.Background(), "test-project-id", createReq)
 	require.NoError(t, err)
@@ -342,7 +342,7 @@ func TestProjectClient_CreateApiKey(t *testing.T) {
 	require.Equal(t, "pk_test_new", apiKey.PublicKey)
 	require.Equal(t, "sk_test_secret_new", apiKey.SecretKey)
 	require.Equal(t, "sk_test_***new", apiKey.DisplaySecretKey)
-	require.Equal(t, "Test API Key", *apiKey.Note)
+	require.Equal(t, "Test API Key", apiKey.Note)
 }
 
 func TestProjectClient_CreateApiKey_MissingProjectID(t *testing.T) {

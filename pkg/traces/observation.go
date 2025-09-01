@@ -52,7 +52,7 @@ type Observation struct {
 	Version             string                 `json:"version,omitempty"`
 	Metadata            any                    `json:"metadata,omitempty"`
 	Output              any                    `json:"output,omitempty"`
-	Usage               *Usage                 `json:"usage,omitempty"`
+	Usage               Usage                  `json:"usage,omitempty"`
 	Level               ObservationLevel       `json:"level,omitempty"`
 	StatusMessage       string                 `json:"statusMessage,omitempty"`
 	ParentObservationID string                 `json:"parentObservationId,omitempty"`
