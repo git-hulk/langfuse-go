@@ -1,4 +1,4 @@
-# langfuse-go ![GitHub CI](https://github.com/git-hulk/langfuse-go/actions/workflows/ci.yaml/badge.svg) [![LICENSE](https://img.shields.io/github/license/git-hulk/langfuse-go.svg)](https://github.com/git-hulk/langfuse-go/blob/master/LICENSE) [![GoDoc](https://img.shields.io/badge/Godoc-reference-blue.svg)](https://godoc.org/github.com/git-hulk/langfuse-go) 
+# langfuse-go ![GitHub CI](https://github.com/git-hulk/langfuse-go/actions/workflows/ci.yaml/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/git-hulk/langfuse-go)](https://goreportcard.com/report/github.com/git-hulk/langfuse-go) [![LICENSE](https://img.shields.io/github/license/git-hulk/langfuse-go.svg)](https://github.com/git-hulk/langfuse-go/blob/master/LICENSE) [![GoDoc](https://img.shields.io/badge/Godoc-reference-blue.svg)](https://godoc.org/github.com/git-hulk/langfuse-go) 
 
 Go client & SDK for interacting with [Langfuse](https://langfuse.com/). Provides comprehensive support for observability tracing, prompt management, model configuration, datasets, sessions, scores, projects, LLM connections, and organization management with efficient batch processing.
 
