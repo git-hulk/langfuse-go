@@ -213,9 +213,9 @@ func runPromptTests(client *langfuse.Langfuse) {
 	if err != nil {
 		printError("Error creating text prompt: %v\n", err)
 	} else {
-		fmt.Printf("Created text prompt: %s (version: %d, type: %s)\n", 
+		fmt.Printf("Created text prompt: %s (version: %d, type: %s)\n",
 			createdTextPrompt.Name, createdTextPrompt.Version, createdTextPrompt.Type)
-		
+
 		// Test getting the text prompt
 		textGetParams := prompts.GetParams{
 			Name:    createdTextPrompt.Name,
@@ -226,7 +226,7 @@ func runPromptTests(client *langfuse.Langfuse) {
 			printError("Error getting text prompt: %v\n", err)
 		} else {
 			if textStr, ok := retrievedTextPrompt.Prompt.(string); ok {
-				fmt.Printf("Retrieved text prompt: %s (content: %s)\n", 
+				fmt.Printf("Retrieved text prompt: %s (content: %s)\n",
 					retrievedTextPrompt.Name, textStr[:50]+"...")
 			} else {
 				printError("Error: retrieved text prompt has unexpected type\n")

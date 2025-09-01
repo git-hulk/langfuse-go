@@ -52,7 +52,7 @@ const (
 // metadata about the source, author, and optional comments explaining the score.
 type Score struct {
 	DataType      ScoreDataType     `json:"dataType"`
-	Value         float64           `json:"value"`
+	Value         any               `json:"value"`
 	ID            string            `json:"id"`
 	TraceID       string            `json:"traceId,omitempty"`
 	SessionID     string            `json:"sessionId,omitempty"`
@@ -101,6 +101,10 @@ func (r *CreateScoreRequest) validate() error {
 	// At least one of TraceID, SessionID, or ObservationID must be provided
 	if r.TraceID == "" && r.SessionID == "" && r.ObservationID == "" {
 		return errors.New("at least one of 'traceId', 'sessionId', or 'observationId' is required")
+	}
+	// Validate value according to data type
+	if err := r.validateValueByDataType(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -284,7 +288,39 @@ func (c *Client) Create(ctx context.Context, createScore *CreateScoreRequest) (*
 	return &createdScore, nil
 }
 
-// Delete deletes a score by ID (v1 API).
+// validateValueByDataType validates the Value field based on the DataType.
+func (r *CreateScoreRequest) validateValueByDataType() error {
+	switch r.DataType {
+	case ScoreDataTypeBoolean:
+		switch v := r.Value.(type) {
+		case float64, float32, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+			if v != 0 && v != 1 {
+				return errors.New("value must be 0 or 1 for BOOLEAN data type")
+			}
+		case bool:
+			if v {
+				r.Value = 1
+			} else {
+				r.Value = 0
+			}
+		default:
+			return errors.New("value must be 0, 1, or boolean for BOOLEAN data type")
+		}
+	case ScoreDataTypeCategorical:
+		if _, ok := r.Value.(string); !ok {
+			return errors.New("value must be a string for CATEGORICAL data type")
+		}
+	case ScoreDataTypeNumeric:
+		switch r.Value.(type) {
+		case float64, float32, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+			// Valid numeric types
+		default:
+			return errors.New("value must be a number for NUMERIC data type")
+		}
+	}
+	return nil
+}
+
 func (c *Client) Delete(ctx context.Context, scoreID string) error {
 	if scoreID == "" {
 		return errors.New("'scoreID' is required")
