@@ -18,6 +18,7 @@ package langfuse
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/go-resty/resty/v2"
 
@@ -60,16 +61,62 @@ type Langfuse struct {
 	restyCli      *resty.Client
 }
 
+// ClientOption is a function that configures a Langfuse client.
+type ClientOption func(*clientConfig)
+
+// clientConfig holds configuration options for the Langfuse client.
+type clientConfig struct {
+	httpClient *http.Client
+}
+
+// WithHTTPClient sets a custom HTTP client for the Langfuse client.
+//
+// This allows you to customize timeout settings, transport configuration,
+// and other HTTP client behavior. If not provided, resty will use its default HTTP client.
+//
+// Example:
+//
+//	httpClient := &http.Client{
+//		Timeout: 30 * time.Second,
+//		Transport: &http.Transport{
+//			MaxIdleConns:        100,
+//			MaxIdleConnsPerHost: 10,
+//		},
+//	}
+//	client := langfuse.NewClient("https://cloud.langfuse.com", "public-key", "secret-key", langfuse.WithHTTPClient(httpClient))
+func WithHTTPClient(httpClient *http.Client) ClientOption {
+	return func(config *clientConfig) {
+		config.httpClient = httpClient
+	}
+}
+
 // NewClient creates a new Langfuse client instance with the specified host and credentials.
 //
 // The host should be the base URL of your Langfuse instance (e.g., "https://cloud.langfuse.com").
 // The publicKey and secretKey are obtained from your Langfuse project settings.
+// Optional configuration can be provided using ClientOption functions.
 //
 // The client automatically configures HTTP basic authentication and sets the API base URL.
 // Remember to call Close() when done to ensure all pending traces are flushed.
-func NewClient(host string, publicKey string, secretKey string) *Langfuse {
-	restyCli := resty.New().
-		SetBaseURL(host+"/api/public").
+//
+// Example with custom HTTP client:
+//
+//	httpClient := &http.Client{Timeout: 30 * time.Second}
+//	client := langfuse.NewClient("https://cloud.langfuse.com", "public-key", "secret-key", langfuse.WithHTTPClient(httpClient))
+func NewClient(host string, publicKey string, secretKey string, options ...ClientOption) *Langfuse {
+	config := &clientConfig{}
+	for _, option := range options {
+		option(config)
+	}
+
+	var restyCli *resty.Client
+	if config.httpClient != nil {
+		restyCli = resty.NewWithClient(config.httpClient)
+	} else {
+		restyCli = resty.New()
+	}
+
+	restyCli.SetBaseURL(host+"/api/public").
 		SetBasicAuth(publicKey, secretKey)
 
 	return &Langfuse{
