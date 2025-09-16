@@ -75,7 +75,7 @@ func (p *PromptEntry) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if p.Type == "text" {
+	if strings.ToLower(p.Type) == "text" {
 		var promptStr string
 		if err := json.Unmarshal(temp.Prompt, &promptStr); err != nil {
 			return fmt.Errorf("failed to unmarshal prompt as string for type 'text': %w", err)
@@ -101,7 +101,7 @@ func (p *PromptEntry) validate() error {
 	}
 
 	// Validate based on Type field
-	if p.Type == "text" {
+	if strings.ToLower(p.Type) == "text" {
 		// For text type, prompt should be a string
 		if str, ok := p.Prompt.(string); !ok || str == "" {
 			return errors.New("'prompt' must be a non-empty string when type is 'text'")
@@ -158,10 +158,10 @@ func (query *ListParams) ToQueryString() string {
 	}
 	if !query.FromUpdatedAt.IsZero() {
 		// format with ios8601
-		parts = append(parts, "from_updated_at="+query.FromUpdatedAt.Format(time.RFC3339))
+		parts = append(parts, "fromUpdatedAt="+query.FromUpdatedAt.Format(time.RFC3339))
 	}
 	if !query.ToUpdatedAt.IsZero() {
-		parts = append(parts, "to_updated_at="+query.ToUpdatedAt.Format(time.RFC3339))
+		parts = append(parts, "toUpdatedAt="+query.ToUpdatedAt.Format(time.RFC3339))
 	}
 	return strings.Join(parts, "&")
 }
