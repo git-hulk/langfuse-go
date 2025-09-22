@@ -44,6 +44,7 @@ func TestCreateScoreRequest_validate(t *testing.T) {
 			request: CreateScoreRequest{
 				Name:          "relevance",
 				Value:         1.0,
+				TraceID:       "trace-123",
 				ObservationID: "obs-789",
 			},
 			wantErr: false,
@@ -73,7 +74,7 @@ func TestCreateScoreRequest_validate(t *testing.T) {
 				Value: 0.8,
 			},
 			wantErr: true,
-			errMsg:  "at least one of 'traceId', 'sessionId', or 'observationId' is required",
+			errMsg:  "at least one of 'traceId', 'sessionId', or 'datasetRunID' is required",
 		},
 	}
 
