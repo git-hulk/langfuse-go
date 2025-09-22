@@ -99,7 +99,7 @@ func (r *CreateScoreRequest) validate() error {
 		return errors.New("'value' is required")
 	}
 	// At least one of TraceID, SessionID, or ObservationID must be provided
-	if r.TraceID == "" && r.SessionID == "" && r.ObservationID == "" {
+	if r.TraceID == "" && r.SessionID == "" && r.DatasetRunID == "" {
 		return errors.New("at least one of 'traceId', 'sessionId', or 'observationId' is required")
 	}
 	// Validate value according to data type
