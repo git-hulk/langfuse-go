@@ -98,9 +98,9 @@ func (r *CreateScoreRequest) validate() error {
 	if r.Value == nil {
 		return errors.New("'value' is required")
 	}
-	// At least one of TraceID, SessionID, or ObservationID must be provided
-	if r.TraceID == "" && r.SessionID == "" && r.ObservationID == "" {
-		return errors.New("at least one of 'traceId', 'sessionId', or 'observationId' is required")
+	// At least one of TraceID, SessionID, or DatasetRunID must be provided
+	if r.TraceID == "" && r.SessionID == "" && r.DatasetRunID == "" {
+		return errors.New("at least one of 'traceId', 'sessionId', or 'datasetRunID' is required")
 	}
 	// Validate value according to data type
 	if err := r.validateValueByDataType(); err != nil {
