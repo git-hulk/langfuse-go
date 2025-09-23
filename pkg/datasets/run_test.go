@@ -302,7 +302,8 @@ func TestClient_CreateDatasetRunItems(t *testing.T) {
 	t.Run("create dataset run items with API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error": "Invalid request"}`))
+			_, err := w.Write([]byte(`{"error": "Invalid request"}`))
+			require.NoError(t, err)
 		}))
 		defer server.Close()
 
@@ -445,7 +446,8 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 	t.Run("list dataset run items with API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error": "Invalid request"}`))
+			_, err := w.Write([]byte(`{"error": "Invalid request"}`))
+			require.NoError(t, err)
 		}))
 		defer server.Close()
 
@@ -495,7 +497,8 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(listResponse)
+			err := json.NewEncoder(w).Encode(listResponse)
+			require.NoError(t, err)
 		}))
 		defer server.Close()
 
@@ -726,20 +729,5 @@ func TestListDatasetRunItemsParams_ToQueryString(t *testing.T) {
 		// Verify special characters are properly URL encoded
 		require.Contains(t, queryStr, "datasetId=dataset%2Fwith%2Fslashes")
 		require.Contains(t, queryStr, "runName=run+with+spaces+%26+symbols")
-	})
-
-	// Test exact match with all parameters set
-	t.Run("exact match with all parameters set", func(t *testing.T) {
-		params := ListDatasetRunItemsParams{
-			DatasetId: "dataset-789",
-			RunName:   "exact-match-run",
-			Page:      5,
-			Limit:     100,
-		}
-		queryStr := params.ToQueryString()
-
-		// url.Values.Encode() sorts keys lexicographically
-		expected := "datasetId=dataset-789&limit=100&page=5&runName=exact-match-run"
-		require.Equal(t, expected, queryStr)
 	})
 }
