@@ -86,9 +86,9 @@ func (r *CreateDatasetRunItemRequest) validate() error {
 	return nil
 }
 
-// ListDatasetRunItems represents the paginated response from the list dataset runs API.
+// ListDatasetRunItemsParams represents the paginated response from the list dataset runs API.
 type ListDatasetRunItemsParams struct {
-	DatasetId string `json:"datasetId"`
+	DatasetID string `json:"datasetId"`
 	RunName   string `json:"runName"`
 	Page      int    `json:"page"`
 	Limit     int    `json:"limit"`
@@ -106,8 +106,8 @@ func (p *ListDatasetRunItemsParams) ToQueryString() string {
 	if p.RunName != "" {
 		parts.Add("runName", p.RunName)
 	}
-	if p.DatasetId != "" {
-		parts.Add("datasetId", p.DatasetId)
+	if p.DatasetID != "" {
+		parts.Add("datasetId", p.DatasetID)
 	}
 	return parts.Encode()
 }
@@ -222,7 +222,7 @@ func (c *Client) CreateDatasetRunItems(ctx context.Context, req CreateDatasetRun
 
 // ListDatasetRunItems retrieves a list of dataset run items.
 func (c *Client) ListDatasetRunItems(ctx context.Context, params ListDatasetRunItemsParams) (*ListDatasetRunItems, error) {
-	if params.DatasetId == "" {
+	if params.DatasetID == "" {
 		return nil, errors.New("'datasetId' is required")
 	}
 	if params.RunName == "" {

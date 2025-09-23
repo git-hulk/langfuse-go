@@ -326,7 +326,7 @@ func TestClient_CreateDatasetRunItems(t *testing.T) {
 func TestClient_ListDatasetRunItems(t *testing.T) {
 	ctx := context.Background()
 
-	// 测试成功获取 dataset run items 列表
+	// Test successful retrieval of dataset run items list
 	t.Run("successful list dataset run items", func(t *testing.T) {
 		datasetId := "dataset-123"
 		runName := "test-run"
@@ -337,14 +337,14 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 			require.Equal(t, "/dataset-run-items", r.URL.Path)
 			require.Equal(t, "GET", r.Method)
 
-			// 验证查询参数
+			// Verify query parameters
 			query := r.URL.Query()
 			require.Equal(t, datasetId, query.Get("datasetId"))
 			require.Equal(t, runName, query.Get("runName"))
 			require.Equal(t, strconv.Itoa(page), query.Get("page"))
 			require.Equal(t, strconv.Itoa(limit), query.Get("limit"))
 
-			// 返回模拟响应
+			// Return mock response
 			listResponse := ListDatasetRunItems{
 				Metadata: common.ListMetadata{
 					Page:       page,
@@ -384,7 +384,7 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 		datasetClient := NewClient(client)
 
 		params := ListDatasetRunItemsParams{
-			DatasetId: datasetId,
+			DatasetID: datasetId,
 			RunName:   runName,
 			Page:      page,
 			Limit:     limit,
@@ -400,7 +400,7 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 		require.Equal(t, "run-item-2", result.Data[1].ID)
 	})
 
-	// 测试缺少 datasetId 的情况
+	// Test case where datasetId is missing
 	t.Run("list dataset run items with empty datasetId", func(t *testing.T) {
 		client := resty.New()
 		datasetClient := NewClient(client)
@@ -414,13 +414,13 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 		require.Equal(t, "'datasetId' is required", err.Error())
 	})
 
-	// 测试缺少 runName 的情况
+	// Test case where runName is missing
 	t.Run("list dataset run items with empty runName", func(t *testing.T) {
 		client := resty.New()
 		datasetClient := NewClient(client)
 
 		params := ListDatasetRunItemsParams{
-			DatasetId: "dataset-123",
+			DatasetID: "dataset-123",
 		}
 		result, err := datasetClient.ListDatasetRunItems(ctx, params)
 		require.Error(t, err)
@@ -428,13 +428,13 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 		require.Equal(t, "'runName' is required", err.Error())
 	})
 
-	// 测试 HTTP 请求失败的情况
+	// Test case where HTTP request fails
 	t.Run("list dataset run items with HTTP error", func(t *testing.T) {
 		client := resty.New().SetBaseURL("http://non-existent-domain-123456.com")
 		datasetClient := NewClient(client)
 
 		params := ListDatasetRunItemsParams{
-			DatasetId: "dataset-123",
+			DatasetID: "dataset-123",
 			RunName:   "test-run",
 		}
 		result, err := datasetClient.ListDatasetRunItems(ctx, params)
@@ -442,7 +442,7 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 		require.Nil(t, result)
 	})
 
-	// 测试 API 返回错误状态码的情况
+	// Test case where API returns an error status code
 	t.Run("list dataset run items with API error", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -455,7 +455,7 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 		datasetClient := NewClient(client)
 
 		params := ListDatasetRunItemsParams{
-			DatasetId: "dataset-123",
+			DatasetID: "dataset-123",
 			RunName:   "test-run",
 		}
 		result, err := datasetClient.ListDatasetRunItems(ctx, params)
@@ -465,7 +465,7 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 		require.Contains(t, err.Error(), "400")
 	})
 
-	// 测试默认分页参数（page=0, limit=0）
+	// Test default pagination parameters (page=0, limit=0)
 	t.Run("list dataset run items with default pagination params", func(t *testing.T) {
 		datasetId := "dataset-123"
 		runName := "test-run"
@@ -506,7 +506,7 @@ func TestClient_ListDatasetRunItems(t *testing.T) {
 		datasetClient := NewClient(client)
 
 		params := ListDatasetRunItemsParams{
-			DatasetId: datasetId,
+			DatasetID: datasetId,
 			RunName:   runName,
 			Page:      0,
 			Limit:     0,
@@ -605,7 +605,7 @@ func TestListDatasetRunItemsParams_ToQueryString(t *testing.T) {
 	// Test with all parameters set
 	t.Run("convert with all parameters set", func(t *testing.T) {
 		params := ListDatasetRunItemsParams{
-			DatasetId: "dataset-123",
+			DatasetID: "dataset-123",
 			RunName:   "test-run",
 			Page:      2,
 			Limit:     20,
@@ -622,7 +622,7 @@ func TestListDatasetRunItemsParams_ToQueryString(t *testing.T) {
 	// Test with only required parameters set
 	t.Run("convert with only required parameters", func(t *testing.T) {
 		params := ListDatasetRunItemsParams{
-			DatasetId: "dataset-456",
+			DatasetID: "dataset-456",
 			RunName:   "another-run",
 			// Page and Limit are 0 (default)
 		}
@@ -638,7 +638,7 @@ func TestListDatasetRunItemsParams_ToQueryString(t *testing.T) {
 	// Test with only pagination parameters set
 	t.Run("convert with only pagination parameters", func(t *testing.T) {
 		params := ListDatasetRunItemsParams{
-			// DatasetId and RunName are empty
+			// DatasetID and RunName are empty
 			Page:  3,
 			Limit: 50,
 		}
@@ -660,10 +660,10 @@ func TestListDatasetRunItemsParams_ToQueryString(t *testing.T) {
 		require.Empty(t, queryStr)
 	})
 
-	// Test with DatasetId and Page set
-	t.Run("convert with DatasetId and Page set", func(t *testing.T) {
+	// Test with DatasetID and Page set
+	t.Run("convert with DatasetID and Page set", func(t *testing.T) {
 		params := ListDatasetRunItemsParams{
-			DatasetId: "dataset-789",
+			DatasetID: "dataset-789",
 			// RunName is empty
 			Page: 1,
 			// Limit is 0
@@ -680,7 +680,7 @@ func TestListDatasetRunItemsParams_ToQueryString(t *testing.T) {
 	// Test with RunName and Limit set
 	t.Run("convert with RunName and Limit set", func(t *testing.T) {
 		params := ListDatasetRunItemsParams{
-			// DatasetId is empty
+			// DatasetID is empty
 			RunName: "special-run",
 			// Page is 0
 			Limit: 100,
@@ -721,7 +721,7 @@ func TestListDatasetRunItemsParams_ToQueryString(t *testing.T) {
 	// Test with URL encoding of special characters
 	t.Run("convert with URL encoding of special characters", func(t *testing.T) {
 		params := ListDatasetRunItemsParams{
-			DatasetId: "dataset/with/slashes",
+			DatasetID: "dataset/with/slashes",
 			RunName:   "run with spaces & symbols",
 		}
 		queryStr := params.ToQueryString()
