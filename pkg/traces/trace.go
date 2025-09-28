@@ -80,15 +80,35 @@ func (t *Trace) getParentObservationID() string {
 // to this trace. The span's start time is set to the current time.
 // Returns an Observation that can be used to add data and end the span.
 func (t *Trace) StartSpan(name string) *Observation {
-	spanID := t.ingestor.idGenerator.GenerateSpanID().String()
+	observation := t.StartObservation(name, ObservationTypeSpan)
+	return observation
+}
+
+// StartObservation creates a new child observation of the specified type within this trace.
+//
+// The observation is automatically assigned a unique ID and linked to this trace.
+// The observation's start time is set to the current time.
+// Returns an Observation that can be used to add data and end the observation.
+func (t *Trace) StartObservation(name string, typ ObservationType) *Observation {
+	observationID := t.ingestor.idGenerator.GenerateSpanID().String()
 	observation := &Observation{
 		TraceID:             t.ID,
-		ID:                  spanID,
+		ID:                  observationID,
 		Name:                name,
-		Type:                ObservationTypeSpan,
+		Type:                typ,
 		ParentObservationID: t.getParentObservationID(),
 		StartTime:           time.Now(),
 	}
 	t.observations = append(t.observations, observation)
+	return observation
+}
+
+// StartGeneration creates a new child observation (generation) within this trace.
+//
+// The generation is automatically assigned a unique ID, set to generation type, and linked
+// to this trace. The generation's start time is set to the current time.
+// Returns an Observation that can be used to add data and end the generation.
+func (t *Trace) StartGeneration(name string) *Observation {
+	observation := t.StartObservation(name, ObservationTypeGeneration)
 	return observation
 }
