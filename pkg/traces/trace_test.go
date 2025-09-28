@@ -312,3 +312,101 @@ func TestTrace_DeepNestedSpans(t *testing.T) {
 		spanIDs[obs.ID] = true
 	}
 }
+
+func TestTrace_StartObservation(t *testing.T) {
+	// Create ingestor with mock server for ID generation
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := resty.New().SetBaseURL(server.URL)
+	ingestor := NewIngestor(client)
+
+	trace := &Trace{
+		ingestor: ingestor,
+		TraceEntry: TraceEntry{
+			ID:   "test-trace-id",
+			Name: "test-trace",
+		},
+		observations: []*Observation{},
+	}
+
+	// Test creating an observation with a specific type
+	observation := trace.StartObservation("test-observation", ObservationTypeAgent)
+
+	// Verify the observation was created correctly
+	require.NotNil(t, observation, "StartObservation should return a non-nil observation")
+	assert.Equal(t, "test-observation", observation.Name, "Observation name should match the provided name")
+	assert.Equal(t, ObservationTypeAgent, observation.Type, "Observation type should match the provided type")
+	assert.Equal(t, "test-trace-id", observation.TraceID, "Observation should be linked to the correct trace")
+	assert.Equal(t, "test-trace-id", observation.ParentObservationID, "First observation should have trace ID as parent")
+	assert.NotEmpty(t, observation.ID, "Observation should have a generated ID")
+	assert.False(t, observation.StartTime.IsZero(), "Observation should have a start time set")
+	assert.True(t, observation.EndTime.IsZero(), "Observation should not be ended initially")
+
+	// Verify the observation was added to the trace's observations slice
+	assert.Len(t, trace.observations, 1, "Trace should have one observation")
+	assert.Equal(t, observation, trace.observations[0], "The returned observation should be the same as the one in the slice")
+
+	// Test creating another observation with a different type
+	observation2 := trace.StartObservation("test-observation-2", ObservationTypeTool)
+
+	// Verify the second observation
+	require.NotNil(t, observation2, "StartObservation should return a non-nil observation")
+	assert.Equal(t, "test-observation-2", observation2.Name, "Second observation name should match")
+	assert.Equal(t, ObservationTypeTool, observation2.Type, "Second observation type should match")
+	assert.Equal(t, "test-trace-id", observation2.TraceID, "Second observation should be linked to the correct trace")
+	assert.Equal(t, observation.ID, observation2.ParentObservationID, "Second observation should have first observation as parent")
+	assert.NotEqual(t, observation.ID, observation2.ID, "Each observation should have a unique ID")
+
+	// Verify both observations are in the trace
+	assert.Len(t, trace.observations, 2, "Trace should have two observations")
+	assert.Equal(t, observation, trace.observations[0], "First observation should be in the slice")
+	assert.Equal(t, observation2, trace.observations[1], "Second observation should be in the slice")
+}
+
+func TestTrace_StartGeneration(t *testing.T) {
+	// Create ingestor with mock server for ID generation
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := resty.New().SetBaseURL(server.URL)
+	ingestor := NewIngestor(client)
+
+	trace := &Trace{
+		ingestor: ingestor,
+		TraceEntry: TraceEntry{
+			ID:   "test-trace-id",
+			Name: "test-trace",
+		},
+		observations: []*Observation{},
+	}
+
+	// Test creating a generation
+	generation := trace.StartGeneration("test-generation")
+
+	// Verify the generation was created correctly
+	require.NotNil(t, generation, "StartGeneration should return a non-nil observation")
+	assert.Equal(t, "test-generation", generation.Name, "Generation name should match the provided name")
+	assert.Equal(t, ObservationTypeGeneration, generation.Type, "Generation should have Generation type")
+	assert.Equal(t, "test-trace-id", generation.TraceID, "Generation should be linked to the correct trace")
+	assert.Equal(t, "test-trace-id", generation.ParentObservationID, "First generation should have trace ID as parent")
+	assert.NotEmpty(t, generation.ID, "Generation should have a generated ID")
+	assert.False(t, generation.StartTime.IsZero(), "Generation should have a start time set")
+	assert.True(t, generation.EndTime.IsZero(), "Generation should not be ended initially")
+
+	// Verify the generation was added to the trace's observations slice
+	assert.Len(t, trace.observations, 1, "Trace should have one observation")
+	assert.Equal(t, generation, trace.observations[0], "The returned generation should be the same as the one in the slice")
+
+	// Test that StartGeneration is equivalent to StartObservation with Generation type
+	generation2 := trace.StartGeneration("test-generation-2")
+	observation := trace.StartObservation("test-observation", ObservationTypeGeneration)
+
+	// Both should have the same type
+	assert.Equal(t, generation2.Type, observation.Type, "StartGeneration should be equivalent to StartObservation with Generation type")
+	assert.Equal(t, ObservationTypeGeneration, generation2.Type, "StartGeneration should create observations with Generation type")
+}
