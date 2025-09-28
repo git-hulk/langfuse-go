@@ -17,9 +17,49 @@ import (
 )
 
 const (
-	IngestionCreateTrace = "trace-create"
-	IngestionCreateSpan  = "span-create"
+	IngestionCreateTrace          = "trace-create"
+	IngestionCreateSpan           = "span-create"
+	IngestionUpdateSpan           = "span-update"
+	IngestionScoreSpan            = "score-create"
+	IngestionCreateGeneration     = "generation-create"
+	IngestionUpdateGeneration     = "generation-update"
+	IngestionCreateEvent          = "event-create"
+	IngestionCreateAgent          = "agent-create"
+	IngestionCreateTool           = "tool-create"
+	IngestionCreateChain          = "chain-create"
+	IngestionCreateRetriever      = "retriever-create"
+	IngestionCreateEvaluator      = "evaluator-create"
+	IngestionCreateEmbedding      = "embedding-create"
+	IngestionCreateGuardrail      = "guardrail-create"
+	IngestionSDKLog               = "sdk-log"
+	IngestionCreateDatasetRunItem = "dataset-run-item-create"
+
+	//Deprecated: IngestionCreateObservation LEGACY, only required for backwards compatibility
+	IngestionCreateObservation = "observation-create"
+	// Deprecated:  IngestionUpdateObservation LEGACY, only required for backwards compatibility
+	IngestionUpdateObservation = "observation-update"
 )
+
+// ObservationType map to IngestionType
+// TODO: There is a problem with the design here. The necessity of ObservationType is not that great, and there is currently no more suitable solution for Update
+var typeMap = map[ObservationType]string{
+	ObservationTypeSpan: IngestionCreateSpan,
+	//ObservationTypeSpan:       IngestionUpdateSpan,
+	ObservationTypeGeneration: IngestionCreateGeneration,
+	//ObservationTypeGeneration: IngestionUpdateGeneration,
+	ObservationTypeEvent:     IngestionCreateEvent,
+	ObservationTypeAgent:     IngestionCreateAgent,
+	ObservationTypeTool:      IngestionCreateTool,
+	ObservationTypeChain:     IngestionCreateChain,
+	ObservationTypeRetriever: IngestionCreateRetriever,
+	ObservationTypeEvaluator: IngestionCreateEvaluator,
+	ObservationTypeEmbedding: IngestionCreateEmbedding,
+	ObservationTypeGuardrail: IngestionCreateGuardrail,
+}
+
+func toIngestionType(typ ObservationType) string {
+	return typeMap[typ]
+}
 
 type TraceID [16]byte
 
@@ -133,7 +173,7 @@ func (ingestor *Ingestor) TracesToEvents(traces []*Trace) []IngestionEvent {
 			events = append(events, IngestionEvent{
 				ID:        uuid.Must(uuid.NewV4()).String(),
 				Timestamp: observation.StartTime,
-				Type:      IngestionCreateSpan,
+				Type:      toIngestionType(observation.Type),
 				Body:      observation,
 			})
 		}

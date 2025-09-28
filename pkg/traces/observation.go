@@ -9,6 +9,14 @@ type ObservationType string
 const (
 	ObservationTypeSpan       ObservationType = "SPAN"
 	ObservationTypeGeneration ObservationType = "GENERATION"
+	ObservationTypeEvent      ObservationType = "EVENT"
+	ObservationTypeAgent      ObservationType = "AGENT"
+	ObservationTypeTool       ObservationType = "TOOL"
+	ObservationTypeChain      ObservationType = "CHAIN"
+	ObservationTypeRetriever  ObservationType = "RETRIEVER"
+	ObservationTypeEvaluator  ObservationType = "EVALUATOR"
+	ObservationTypeEmbedding  ObservationType = "EMBEDDING"
+	ObservationTypeGuardrail  ObservationType = "GUARDRAIL"
 )
 
 type UnitType string
