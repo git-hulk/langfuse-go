@@ -68,7 +68,8 @@ type DeleteDatasetRunResponse struct {
 type CreateDatasetRunItemRequest struct {
 	RunName string `json:"runName"`
 	// Description of the run. If run exists, description will be updated.
-	DatasetItemID string `json:"datasetItemId,omitempty"`
+	RunDescription string `json:"runDescription"`
+	DatasetItemID  string `json:"datasetItemId,omitempty"`
 	// Metadata of the dataset run, updates run if run already exists
 	Metadata      any    `json:"metadata,omitempty"`
 	ObservationID string `json:"observationId,omitempty"`
