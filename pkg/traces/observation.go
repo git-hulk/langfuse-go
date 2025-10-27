@@ -51,6 +51,8 @@ type Observation struct {
 	TraceID             string           `json:"traceId,omitempty"`
 	Type                ObservationType  `json:"type"`
 	Name                string           `json:"name,omitempty"`
+	PromptName          string           `json:"promptName,omitempty"`
+	PromptVersion       int              `json:"promptVersion,omitempty"`
 	StartTime           time.Time        `json:"startTime,omitempty"`
 	EndTime             time.Time        `json:"endTime,omitempty"`
 	CompletionStartTime time.Time        `json:"completionStartTime,omitempty"`
