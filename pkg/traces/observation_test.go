@@ -36,6 +36,8 @@ func TestObservation_Fields(t *testing.T) {
 		Name:                "test-generation",
 		Model:               "gpt-4",
 		ModelParameters:     map[string]any{"temperature": 0.7},
+		PromptName:          "test-prompt",
+		PromptVersion:       1,
 		Input:               "test input",
 		Version:             "1.0",
 		Metadata:            map[string]any{"key": "value"},
@@ -53,6 +55,8 @@ func TestObservation_Fields(t *testing.T) {
 	assert.Equal(t, "test-generation", observation.Name)
 	assert.Equal(t, "gpt-4", observation.Model)
 	assert.Equal(t, map[string]any{"temperature": 0.7}, observation.ModelParameters)
+	assert.Equal(t, "test-prompt", observation.PromptName)
+	assert.Equal(t, 1, observation.PromptVersion)
 	assert.Equal(t, "test input", observation.Input)
 	assert.Equal(t, "1.0", observation.Version)
 	assert.Equal(t, map[string]any{"key": "value"}, observation.Metadata)
