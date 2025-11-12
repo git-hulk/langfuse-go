@@ -19,23 +19,36 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+const (
+	ChatMessageTypePlaceHolder = "placeholder"
+	ChatMessageTypeMessage     = "chatmessage"
+)
+
 // ChatMessageWithPlaceHolder represents a chat message that can include placeholders for dynamic content.
 //
 // Placeholders in the content can be replaced with actual values when using the prompt.
 // The Role field specifies the message role (e.g., "system", "user", "assistant"),
 // Type specifies the content type, and Content contains the message text with optional placeholders.
 type ChatMessageWithPlaceHolder struct {
-	Role    string `json:"role"`
-	Type    string `json:"type"`
-	Content string `json:"content"`
+	Role    string `json:"role,omitempty"`
+	Type    string `json:"type,omitempty"`
+	Content string `json:"content,omitempty"`
+	Name    string `json:"name,omitempty"`
 }
 
 func (c *ChatMessageWithPlaceHolder) validate() error {
-	if c.Role == "" {
-		return errors.New("'role' is required")
-	}
-	if c.Content == "" {
-		return errors.New("'content' is required")
+	switch c.Type {
+	case ChatMessageTypePlaceHolder:
+		if c.Name == "" {
+			return errors.New("'name' is required when type is 'placeholder'")
+		}
+	default:
+		if c.Role == "" {
+			return errors.New("'role' is required when type is 'chatmessage'")
+		}
+		if c.Content == "" {
+			return errors.New("'content' is required when type is 'chatmessage'")
+		}
 	}
 	return nil
 }
@@ -60,10 +73,8 @@ type PromptEntry struct {
 // It correctly unmarshal the Prompt field as either a string (for "text" type)
 // or []ChatMessageWithPlaceHolder (for other types) based on the Type field.
 func (p *PromptEntry) UnmarshalJSON(data []byte) error {
-	// Define an alias to avoid infinite recursion during unmarshalling
 	type Alias PromptEntry
 
-	// First, unmarshal into a temporary struct with raw JSON for the Prompt field
 	temp := &struct {
 		*Alias
 		Prompt json.RawMessage `json:"prompt"`
@@ -100,14 +111,11 @@ func (p *PromptEntry) validate() error {
 		return errors.New("'prompt' cannot be nil")
 	}
 
-	// Validate based on Type field
 	if strings.ToLower(p.Type) == "text" {
-		// For text type, prompt should be a string
 		if str, ok := p.Prompt.(string); !ok || str == "" {
 			return errors.New("'prompt' must be a non-empty string when type is 'text'")
 		}
 	} else {
-		// For other types, prompt should be []ChatMessageWithPlaceHolder
 		messages, ok := p.Prompt.([]ChatMessageWithPlaceHolder)
 		if !ok {
 			return errors.New("'prompt' must be []ChatMessageWithPlaceHolder when type is not 'text'")
@@ -122,6 +130,66 @@ func (p *PromptEntry) validate() error {
 		}
 	}
 	return nil
+}
+
+// Compile renders the prompt by applying the provided variables to any {{variable}} placeholders.
+// For text prompts it returns the compiled string, while for chat prompts it returns a slice of
+// ChatMessageWithPlaceHolder with the content of each message rendered.
+func (p *PromptEntry) Compile(variables map[string]any) (any, error) {
+	if p == nil {
+		return nil, errors.New("prompt entry is empty")
+	}
+	if p.Prompt == nil {
+		return nil, errors.New("'prompt' cannot be empty")
+	}
+
+	isTextPrompt := strings.EqualFold(p.Type, "text")
+	if isTextPrompt {
+		promptStr, ok := p.Prompt.(string)
+		if !ok {
+			return nil, fmt.Errorf("prompt type 'text' must be a string but got %T", p.Prompt)
+		}
+		return newTemplateCompiler(promptStr).compile(variables), nil
+	}
+
+	// In Python SDK, it allows the placeholder to be other types rather than only []ChatMessageWithPlaceHolder.
+	// But here we enforce the type to be []ChatMessageWithPlaceHolder for better type safety.
+	messages, ok := p.Prompt.([]ChatMessageWithPlaceHolder)
+	if !ok {
+		return nil, fmt.Errorf("prompt type '%s' must be []ChatMessageWithPlaceHolder but got %T", p.Type, p.Prompt)
+	}
+
+	compiledMessages := make([]ChatMessageWithPlaceHolder, 0, len(messages))
+	for _, message := range messages {
+		if message.Type != ChatMessageTypePlaceHolder {
+			message.Content = newTemplateCompiler(message.Content).compile(variables)
+			compiledMessages = append(compiledMessages, message)
+		} else {
+			variable, exists := variables[message.Name]
+			if !exists {
+				return nil, fmt.Errorf("missing variable for placeholder '%s'", message.Name)
+			}
+			chatMessages, ok := variable.([]ChatMessageWithPlaceHolder)
+			if !ok {
+				message.Content = fmt.Sprint(variable)
+				compiledMessages = append(compiledMessages, message)
+				continue
+			}
+			for _, chatMessage := range chatMessages {
+				if err := chatMessage.validate(); err != nil {
+					return nil, err
+				}
+				if chatMessage.Type == ChatMessageTypePlaceHolder {
+					return nil, fmt.Errorf("nested placeholders are not allowed, found in placeholder '%s'", message.Name)
+				}
+				compiledContent := newTemplateCompiler(chatMessage.Content).compile(variables)
+				chatMessage.Content = compiledContent
+				compiledMessages = append(compiledMessages, chatMessage)
+			}
+		}
+	}
+	return compiledMessages, nil
+
 }
 
 // ListParams defines the query parameters for filtering and paginating prompt listings.
@@ -157,7 +225,6 @@ func (query *ListParams) ToQueryString() string {
 		parts = append(parts, "limit="+strconv.Itoa(query.Limit))
 	}
 	if !query.FromUpdatedAt.IsZero() {
-		// format with ios8601
 		parts = append(parts, "fromUpdatedAt="+query.FromUpdatedAt.Format(time.RFC3339))
 	}
 	if !query.ToUpdatedAt.IsZero() {
@@ -262,7 +329,6 @@ func (c *Client) Create(ctx context.Context, createPrompt *PromptEntry) (*Prompt
 		return nil, err
 	}
 
-	// For reset the prompt version because it's not supported in the creating API.
 	createPrompt.Version = 0
 
 	var createdPrompt PromptEntry

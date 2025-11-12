@@ -91,3 +91,104 @@ func TestPromptClient_Create(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "test-prompt", prompt.Name)
 }
+
+func TestPromptEntryCompile_Text(t *testing.T) {
+	entry := &PromptEntry{
+		Name:   "text",
+		Type:   "text",
+		Prompt: "Hello {{ name }}!",
+	}
+
+	result, err := entry.Compile(map[string]any{"name": "Alice"})
+	require.NoError(t, err)
+	require.Equal(t, "Hello Alice!", result)
+
+	resultNoVars, err := entry.Compile(map[string]any{})
+	require.NoError(t, err)
+	require.Equal(t, "Hello {{ name }}!", resultNoVars)
+}
+
+func TestPromptEntryCompile_Chat(t *testing.T) {
+	entry := &PromptEntry{
+		Name: "chat",
+		Type: "chat",
+		Prompt: []ChatMessageWithPlaceHolder{
+			{Role: "system", Content: "Hi {{ user }}", Type: ChatMessageTypeMessage},
+			{Name: "examples", Type: ChatMessageTypePlaceHolder},
+		},
+	}
+
+	vars := map[string]any{
+		"user": "Bob",
+		"examples": []ChatMessageWithPlaceHolder{
+			{Role: "user", Content: "Example {{ user }}", Type: ChatMessageTypeMessage},
+		},
+	}
+
+	result, err := entry.Compile(vars)
+	require.NoError(t, err)
+
+	compiled, ok := result.([]ChatMessageWithPlaceHolder)
+	require.True(t, ok)
+	require.Len(t, compiled, 2)
+	require.Equal(t, "Hi Bob", compiled[0].Content)
+	require.Equal(t, "Example Bob", compiled[1].Content)
+}
+
+func TestPromptEntryCompile_MissingPlaceholderVariable(t *testing.T) {
+	entry := &PromptEntry{
+		Name: "chat",
+		Type: "chat",
+		Prompt: []ChatMessageWithPlaceHolder{
+			{Name: "examples", Type: ChatMessageTypePlaceHolder},
+		},
+	}
+
+	_, err := entry.Compile(map[string]any{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing variable for placeholder 'examples'")
+}
+
+func TestPromptEntryCompile_PlaceholderWithStringValue(t *testing.T) {
+	entry := &PromptEntry{
+		Name: "chat",
+		Type: "chat",
+		Prompt: []ChatMessageWithPlaceHolder{
+			{Name: "examples", Type: ChatMessageTypePlaceHolder},
+		},
+	}
+
+	result, err := entry.Compile(map[string]any{"examples": "inline"})
+	require.NoError(t, err)
+
+	compiled := result.([]ChatMessageWithPlaceHolder)
+	require.Len(t, compiled, 1)
+	require.Equal(t, "inline", compiled[0].Content)
+	require.Equal(t, ChatMessageTypePlaceHolder, compiled[0].Type)
+}
+
+func TestPromptEntryCompile_NestedPlaceholderReturnsError(t *testing.T) {
+	entry := &PromptEntry{
+		Name: "chat",
+		Type: "chat",
+		Prompt: []ChatMessageWithPlaceHolder{
+			{Name: "examples", Type: ChatMessageTypePlaceHolder},
+		},
+	}
+
+	vars := map[string]any{
+		"examples": []ChatMessageWithPlaceHolder{
+			{Name: "inner", Type: ChatMessageTypePlaceHolder},
+		},
+	}
+
+	_, err := entry.Compile(vars)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "nested placeholders are not allowed")
+}
+
+func TestPromptEntryCompile_NilPromptEntry(t *testing.T) {
+	var entry *PromptEntry
+	_, err := entry.Compile(map[string]any{})
+	require.EqualError(t, err, "prompt entry is empty")
+}
