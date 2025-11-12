@@ -147,6 +147,26 @@ func main() {
     prompt, err := langfuse.Prompts().Get(ctx, prompts.GetParams{Name: "welcome-message"})
 
     listResponse, err := langfuse.Prompts().List(ctx, prompts.ListParams{Limit: 20})
+
+    // Compile a text prompt
+    textPrompt, err := langfuse.Prompts().Get(ctx, prompts.GetParams{
+        Name: "welcome-message-text",
+        Label: "latest",
+        Version: 1,
+    })
+    compiledText, err := textPrompt.Compile(map[string]any{
+        "name": "Alice",
+    })
+    renderedText := compiledText.(string)
+
+    // Compile a chat prompt with placeholders
+    compiledChat, err := prompt.Compile(map[string]any{
+        "user": "Bob",
+        "examples": []prompts.ChatMessageWithPlaceHolder{
+            {Role: "user", Content: "Hello {{ user }}"},
+        },
+    })
+    chatMessages := compiledChat.([]prompts.ChatMessageWithPlaceHolder)
 }
 ```
 
