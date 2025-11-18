@@ -182,10 +182,10 @@ func TestTrace(t *testing.T) {
 	require.Equal(t, map[string]string{"output": "Test tool output"}, tool.Output, "Tool output should match")
 
 	// Verify observations ended correctly (end time should be set)
-	require.False(t, retriever.EndTime.IsZero(), "Retriever end time should be set")
-	require.False(t, llm.EndTime.IsZero(), "Generation end time should be set")
-	require.False(t, tool.EndTime.IsZero(), "Tool end time should be set")
-	require.False(t, agent.EndTime.IsZero(), "Agent end time should be set")
+	require.NotNil(t, retriever.EndTime, "Retriever end time should be set")
+	require.NotNil(t, llm.EndTime, "Generation end time should be set")
+	require.NotNil(t, tool.EndTime, "Tool end time should be set")
+	require.NotNil(t, agent.EndTime, "Agent end time should be set")
 
 	// Verify observation durations are reasonable (greater than or equal to 0)
 	retrieverDuration := retriever.EndTime.Sub(retriever.StartTime)

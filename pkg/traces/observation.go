@@ -54,8 +54,8 @@ type Observation struct {
 	PromptName          string           `json:"promptName,omitempty"`
 	PromptVersion       int              `json:"promptVersion,omitempty"`
 	StartTime           time.Time        `json:"startTime,omitempty"`
-	EndTime             time.Time        `json:"endTime,omitempty"`
-	CompletionStartTime time.Time        `json:"completionStartTime,omitempty"`
+	EndTime             *time.Time       `json:"endTime,omitempty"`
+	CompletionStartTime *time.Time       `json:"completionStartTime,omitempty"`
 	Model               string           `json:"model,omitempty"`
 	ModelParameters     map[string]any   `json:"modelParameters,omitempty"`
 	Input               any              `json:"input,omitempty"`
@@ -70,5 +70,6 @@ type Observation struct {
 }
 
 func (o *Observation) End() {
-	o.EndTime = time.Now()
+	now := time.Now()
+	o.EndTime = &now
 }

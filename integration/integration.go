@@ -21,6 +21,7 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/projects"
 	"github.com/git-hulk/langfuse-go/pkg/prompts"
 	"github.com/git-hulk/langfuse-go/pkg/scores"
+	"github.com/git-hulk/langfuse-go/pkg/traces"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -68,6 +69,81 @@ func runTraceTests(client *langfuse.Langfuse) {
 
 		trace.End()
 	}
+}
+
+func runLLMGenerationTests(client *langfuse.Langfuse) {
+	ctx := context.Background()
+
+	fmt.Println("Testing LLM Generation Observation API...")
+	trace := client.StartTrace(ctx, "LLM Generation Observation Test")
+	trace.Input = map[string]any{
+		"messages": []map[string]string{
+			{"role": "system", "content": "You are a Langfuse integration test bot."},
+			{"role": "user", "content": "Say hello!"},
+		},
+	}
+	trace.Tags = []string{"llm", "integration", "observation"}
+
+	generation := trace.StartGeneration("assistant-response")
+	generation.Model = "gpt-4o-mini"
+	generation.ModelParameters = map[string]any{
+		"temperature": 0.2,
+		"top_p":       0.95,
+	}
+	generation.PromptName = "integration-llm-prompt"
+	generation.PromptVersion = 1
+	generation.Metadata = map[string]string{"testCase": "llm-generation"}
+	generation.Input = trace.Input
+
+	time.Sleep(200 * time.Millisecond)
+	completionStart := time.Now()
+	generation.CompletionStartTime = &completionStart
+
+	generation.Output = map[string]any{
+		"message": map[string]string{
+			"role":    "assistant",
+			"content": "Hello from Langfuse integration!",
+		},
+		"finishReason": "stop",
+	}
+	generation.Usage = traces.Usage{
+		Input:  32,
+		Output: 96,
+		Total:  128,
+		Unit:   traces.UnitTokens,
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	generation.End()
+	trace.Output = generation.Output
+	trace.End()
+	client.Flush()
+
+	fmt.Printf("Created generation observation %s for trace %s using model %s\n",
+		generation.ID, trace.ID, generation.Model)
+	fmt.Printf("Prompt metadata: %s (version %d)\n", generation.PromptName, generation.PromptVersion)
+	fmt.Printf("Token usage - input: %d, output: %d, total: %d (%s)\n",
+		generation.Usage.Input, generation.Usage.Output, generation.Usage.Total, generation.Usage.Unit)
+
+	if generation.Usage.Total != generation.Usage.Input+generation.Usage.Output {
+		printError("Warning: usage total (%d) does not match input+output (%d)\n",
+			generation.Usage.Total, generation.Usage.Input+generation.Usage.Output)
+	} else {
+		fmt.Println("Usage total matches input + output tokens")
+	}
+
+	if generation.CompletionStartTime != nil {
+		fmt.Printf("Completion started %s after generation start", generation.CompletionStartTime.Sub(generation.StartTime))
+		if generation.EndTime != nil {
+			fmt.Printf(" and finished %s later\n", generation.EndTime.Sub(*generation.CompletionStartTime))
+		} else {
+			fmt.Println(" but end time was not set")
+		}
+	} else {
+		fmt.Println("Completion start time not set")
+	}
+	fmt.Printf("Generation output: %+v\n", generation.Output)
+	fmt.Println("LLM Generation observation test completed!")
 }
 
 func runModelTests(client *langfuse.Langfuse) {
@@ -1402,6 +1478,10 @@ func main() {
 	printInfo("================== TRACE TESTS BEGIN ==================\n")
 	runTraceTests(client)
 	printInfo("================== TRACE TESTS END ==================\n")
+
+	printInfo("================== LLM GENERATION TESTS BEGIN ==================\n")
+	runLLMGenerationTests(client)
+	printInfo("================== LLM GENERATION TESTS END ==================\n")
 
 	printInfo("================== MODEL TESTS BEGIN ==================\n")
 	runModelTests(client)

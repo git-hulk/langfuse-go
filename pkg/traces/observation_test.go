@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestObservation_End(t *testing.T) {
@@ -17,7 +18,7 @@ func TestObservation_End(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	observation.End()
 
-	assert.False(t, observation.EndTime.IsZero())
+	require.NotNil(t, observation.EndTime)
 	assert.True(t, observation.EndTime.After(startTime))
 }
 

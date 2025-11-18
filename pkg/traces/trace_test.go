@@ -192,6 +192,7 @@ func TestTrace_NestedSpansWithEndedSpans(t *testing.T) {
 
 	// End the child span
 	childSpan.End()
+	require.NotNil(t, childSpan.EndTime)
 	assert.False(t, childSpan.EndTime.IsZero())
 
 	// Create another span after child has ended
@@ -343,7 +344,7 @@ func TestTrace_StartObservation(t *testing.T) {
 	assert.Equal(t, "test-trace-id", observation.ParentObservationID, "First observation should have trace ID as parent")
 	assert.NotEmpty(t, observation.ID, "Observation should have a generated ID")
 	assert.False(t, observation.StartTime.IsZero(), "Observation should have a start time set")
-	assert.True(t, observation.EndTime.IsZero(), "Observation should not be ended initially")
+	assert.Nil(t, observation.EndTime, "Observation should not be ended initially")
 
 	// Verify the observation was added to the trace's observations slice
 	assert.Len(t, trace.observations, 1, "Trace should have one observation")
@@ -396,7 +397,7 @@ func TestTrace_StartGeneration(t *testing.T) {
 	assert.Equal(t, "test-trace-id", generation.ParentObservationID, "First generation should have trace ID as parent")
 	assert.NotEmpty(t, generation.ID, "Generation should have a generated ID")
 	assert.False(t, generation.StartTime.IsZero(), "Generation should have a start time set")
-	assert.True(t, generation.EndTime.IsZero(), "Generation should not be ended initially")
+	assert.Nil(t, generation.EndTime, "Generation should not be ended initially")
 
 	// Verify the generation was added to the trace's observations slice
 	assert.Len(t, trace.observations, 1, "Trace should have one observation")

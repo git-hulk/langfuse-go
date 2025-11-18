@@ -68,7 +68,7 @@ func (t *Trace) getParentObservationID() string {
 	}
 
 	lastObservation := t.observations[len(t.observations)-1]
-	if lastObservation.EndTime.IsZero() {
+	if lastObservation.EndTime == nil || lastObservation.EndTime.IsZero() {
 		return lastObservation.ID // Use last observation ID if it's still active
 	}
 	return lastObservation.ParentObservationID // Use parent observation ID of the last observation
