@@ -29,6 +29,7 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/health"
 	"github.com/git-hulk/langfuse-go/pkg/llmconnections"
 	"github.com/git-hulk/langfuse-go/pkg/media"
+	"github.com/git-hulk/langfuse-go/pkg/metrics"
 	"github.com/git-hulk/langfuse-go/pkg/models"
 	"github.com/git-hulk/langfuse-go/pkg/projects"
 	"github.com/git-hulk/langfuse-go/pkg/prompts"
@@ -58,6 +59,7 @@ type Langfuse struct {
 	organization  *organizations.Client
 	health        *health.Client
 	media         *media.Client
+	metric        *metrics.Client
 	restyCli      *resty.Client
 }
 
@@ -132,6 +134,7 @@ func NewClient(host string, publicKey string, secretKey string, options ...Clien
 		organization:  organizations.NewClient(restyCli),
 		health:        health.NewClient(restyCli),
 		media:         media.NewClient(restyCli),
+		metric:        metrics.NewClient(restyCli),
 		restyCli:      restyCli,
 	}
 }
@@ -237,6 +240,14 @@ func (c *Langfuse) Health() *health.Client {
 // their input, output, or metadata fields.
 func (c *Langfuse) Media() *media.Client {
 	return c.media
+}
+
+// Metrics returns a client for querying Langfuse metrics data.
+//
+// Use this client to run aggregated analytics queries across traces,
+// observations, and scores through the public metrics API.
+func (c *Langfuse) Metrics() *metrics.Client {
+	return c.metric
 }
 
 // Close gracefully shuts down the client and flushes all pending traces.

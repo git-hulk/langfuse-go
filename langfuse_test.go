@@ -27,6 +27,8 @@ func TestNewClient_WithoutOptions(t *testing.T) {
 	require.NotNil(t, client.organization)
 	require.NotNil(t, client.health)
 	require.NotNil(t, client.media)
+	require.NotNil(t, client.metric)
+	require.NotNil(t, client.Metrics())
 }
 
 func TestNewClient_WithHTTPClient(t *testing.T) {
@@ -61,6 +63,8 @@ func TestNewClient_WithHTTPClient(t *testing.T) {
 	require.NotNil(t, client.organization)
 	require.NotNil(t, client.health)
 	require.NotNil(t, client.media)
+	require.NotNil(t, client.metric)
+	require.NotNil(t, client.Metrics())
 }
 
 func TestNewClient_WithMultipleOptions(t *testing.T) {

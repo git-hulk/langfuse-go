@@ -8,6 +8,7 @@ Go client & SDK for interacting with [Langfuse](https://langfuse.com/). Provides
   - [Core Observability](#core-observability)
     - [Tracing](#tracing)
     - [Sessions](#sessions)
+    - [Metrics](#metrics)
     - [Comments](#comments)
   - [Platform APIs](#platform-apis)
     - [Media](#media)
@@ -29,7 +30,7 @@ Go client & SDK for interacting with [Langfuse](https://langfuse.com/). Provides
 
 ## Core Observability
 
-Core functionality for tracking and monitoring your AI applications with distributed tracing, session management, and contextual comments.
+Core functionality for tracking and monitoring your AI applications with distributed tracing, session management, metrics queries, and contextual comments.
 
 ### Tracing
 
@@ -79,6 +80,67 @@ func main() {
         ToTimestamp:   time.Now(),
         Environment:   []string{"production"},
     })
+}
+```
+
+### Metrics
+
+```go
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    "time"
+
+    langfuse "github.com/git-hulk/langfuse-go"
+    "github.com/git-hulk/langfuse-go/pkg/metrics"
+)
+
+func main() {
+    langfuse := langfuse.NewClient("YOUR_HOST", "YOUR_PUBLIC_KEY", "YOUR_PRIVATE_KEY")
+
+    ctx := context.Background()
+
+    metricsResponse, err := langfuse.Metrics().Get(ctx, &metrics.Query{
+        View: metrics.ViewTraces,
+        Metrics: []metrics.Metric{
+            {Measure: metrics.MeasureCount, Aggregation: "count"},
+        },
+        Dimensions: []metrics.Dimension{
+            {Field: "name"},
+        },
+        FromTimestamp: time.Now().Add(-24 * time.Hour),
+        ToTimestamp:   time.Now(),
+        OrderBy: []metrics.OrderBy{
+            {Field: "count_count", Direction: metrics.OrderDirectionDesc},
+        },
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    type TraceMetricRow struct {
+        Name  string `json:"name"`
+        Count string `json:"count_count"`
+    }
+
+    rows, err := metrics.DecodeRows[TraceMetricRow](metricsResponse.Data)
+    if err != nil {
+        panic(err)
+    }
+
+    rawName, ok := metricsResponse.Data[0].Raw("name")
+    if !ok {
+        panic("name field not found")
+    }
+
+    var name string
+    err = json.Unmarshal(rawName, &name)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(name, rows[0].Name, rows[0].Count)
 }
 ```
 
