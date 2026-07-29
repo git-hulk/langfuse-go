@@ -2,6 +2,7 @@ package comments
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -95,6 +96,16 @@ func TestCreateCommentRequest_validate(t *testing.T) {
 				ProjectID:  "project-123",
 				ObjectType: ObjectTypeTrace,
 				ObjectID:   "trace-123",
+			},
+			wantErr: true,
+		},
+		{
+			name: "content exceeds current API limit",
+			request: CreateCommentRequest{
+				ProjectID:  "project-123",
+				ObjectType: ObjectTypeTrace,
+				ObjectID:   "trace-123",
+				Content:    strings.Repeat("a", 5001),
 			},
 			wantErr: true,
 		},

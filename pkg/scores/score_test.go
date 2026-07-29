@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,7 +45,6 @@ func TestCreateScoreRequest_validate(t *testing.T) {
 			request: CreateScoreRequest{
 				Name:          "relevance",
 				Value:         1.0,
-				TraceID:       "trace-123",
 				ObservationID: "obs-789",
 			},
 			wantErr: false,
@@ -74,7 +74,62 @@ func TestCreateScoreRequest_validate(t *testing.T) {
 				Value: 0.8,
 			},
 			wantErr: true,
-			errMsg:  "at least one of 'traceId', 'sessionId', or 'datasetRunID' is required",
+			errMsg:  "at least one of 'traceId', 'sessionId', 'observationId', or 'datasetRunId' is required",
+		},
+		{
+			name: "valid text score",
+			request: CreateScoreRequest{
+				Name:     "feedback",
+				Value:    "clear and helpful",
+				TraceID:  "trace-123",
+				DataType: ScoreDataTypeText,
+			},
+			wantErr: false,
+		},
+		{
+			name: "text score exceeds current API limit",
+			request: CreateScoreRequest{
+				Name:     "feedback",
+				Value:    strings.Repeat("a", 501),
+				TraceID:  "trace-123",
+				DataType: ScoreDataTypeText,
+			},
+			wantErr: true,
+			errMsg:  "between 1 and 500 characters",
+		},
+		{
+			name: "valid correction score",
+			request: CreateScoreRequest{
+				Name:     "correction",
+				Value:    "corrected output",
+				TraceID:  "trace-123",
+				DataType: ScoreDataTypeCorrection,
+				Source:   ScoreSourceAnnotation,
+			},
+			wantErr: false,
+		},
+		{
+			name: "eval source is rejected by create endpoint",
+			request: CreateScoreRequest{
+				Name:    "accuracy",
+				Value:   0.9,
+				TraceID: "trace-123",
+				Source:  ScoreSourceEval,
+			},
+			wantErr: true,
+			errMsg:  "'source' must be API or ANNOTATION",
+		},
+		{
+			name: "annotation source requires config",
+			request: CreateScoreRequest{
+				Name:     "feedback",
+				Value:    "draft",
+				TraceID:  "trace-123",
+				DataType: ScoreDataTypeText,
+				Source:   ScoreSourceAnnotation,
+			},
+			wantErr: true,
+			errMsg:  "'configId' is required for ANNOTATION scores",
 		},
 	}
 
@@ -167,6 +222,18 @@ func TestListParams_ToQueryString(t *testing.T) {
 				TraceTags: []string{"experiment", "production"},
 			},
 			want: "traceTags=experiment&traceTags=production",
+		},
+		{
+			name: "with new v2 filters",
+			params: ListParams{
+				TraceID:        "trace-123",
+				SessionID:      "session-123",
+				ObservationIDs: []string{"obs-1", "obs-2"},
+				DatasetRunID:   "run-123",
+				Fields:         []string{"score", "trace"},
+				Filter:         `[{"type":"string","column":"name","operator":"=","value":"quality"}]`,
+			},
+			want: "traceId=trace-123&sessionId=session-123&observationId=obs-1%2Cobs-2&datasetRunId=run-123&fields=score%2Ctrace&filter=%5B%7B%22type%22%3A%22string%22%2C%22column%22%3A%22name%22%2C%22operator%22%3A%22%3D%22%2C%22value%22%3A%22quality%22%7D%5D",
 		},
 		{
 			name: "all parameters",

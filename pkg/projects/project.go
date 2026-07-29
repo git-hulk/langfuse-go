@@ -18,9 +18,15 @@ import (
 //
 // Projects are containers for traces, datasets, prompts, and other Langfuse resources.
 // They can have custom metadata and data retention policies.
+type Organization struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type Project struct {
 	ID            string         `json:"id,omitempty"`
 	Name          string         `json:"name"`
+	Organization  Organization   `json:"organization"`
 	Metadata      map[string]any `json:"metadata,omitempty"`
 	RetentionDays int            `json:"retentionDays,omitempty"`
 }
@@ -41,7 +47,7 @@ type CreateProjectRequest struct {
 type UpdateProjectRequest struct {
 	Name      string         `json:"name"`
 	Metadata  map[string]any `json:"metadata,omitempty"`
-	Retention int            `json:"retention"`
+	Retention *int           `json:"retention,omitempty"`
 }
 
 // ProjectDeletionResponse represents the response from deleting a project.
@@ -83,7 +89,9 @@ type APIKeyResponse struct {
 
 // CreateAPIKeyRequest represents the request payload for creating an API key.
 type CreateAPIKeyRequest struct {
-	Note string `json:"note,omitempty"`
+	Note      string `json:"note,omitempty"`
+	PublicKey string `json:"publicKey,omitempty"`
+	SecretKey string `json:"secretKey,omitempty"`
 }
 
 // APIKeyDeletionResponse represents the response from deleting an API key.

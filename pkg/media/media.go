@@ -24,41 +24,66 @@ import (
 type ContentType string
 
 const (
-	ContentTypeImagePNG               ContentType = "image/png"
-	ContentTypeImageJPEG              ContentType = "image/jpeg"
-	ContentTypeImageJPG               ContentType = "image/jpg"
-	ContentTypeImageWebP              ContentType = "image/webp"
-	ContentTypeImageGIF               ContentType = "image/gif"
-	ContentTypeImageSVGXML            ContentType = "image/svg+xml"
-	ContentTypeImageTIFF              ContentType = "image/tiff"
-	ContentTypeImageBMP               ContentType = "image/bmp"
-	ContentTypeAudioMPEG              ContentType = "audio/mpeg"
-	ContentTypeAudioMP3               ContentType = "audio/mp3"
-	ContentTypeAudioWAV               ContentType = "audio/wav"
-	ContentTypeAudioOGG               ContentType = "audio/ogg"
-	ContentTypeAudioOGA               ContentType = "audio/oga"
-	ContentTypeAudioAAC               ContentType = "audio/aac"
-	ContentTypeAudioMP4               ContentType = "audio/mp4"
-	ContentTypeAudioFLAC              ContentType = "audio/flac"
-	ContentTypeVideoMP4               ContentType = "video/mp4"
-	ContentTypeVideoWebM              ContentType = "video/webm"
-	ContentTypeTextPlain              ContentType = "text/plain"
-	ContentTypeTextHTML               ContentType = "text/html"
-	ContentTypeTextCSS                ContentType = "text/css"
-	ContentTypeTextCSV                ContentType = "text/csv"
-	ContentTypeApplicationPDF         ContentType = "application/pdf"
-	ContentTypeApplicationMSWord      ContentType = "application/msword"
-	ContentTypeApplicationMSExcel     ContentType = "application/vnd.ms-excel"
-	ContentTypeApplicationZIP         ContentType = "application/zip"
-	ContentTypeApplicationJSON        ContentType = "application/json"
-	ContentTypeApplicationXML         ContentType = "application/xml"
-	ContentTypeApplicationOctetStream ContentType = "application/octet-stream"
+	ContentTypeImagePNG                     ContentType = "image/png"
+	ContentTypeImageJPEG                    ContentType = "image/jpeg"
+	ContentTypeImageJPG                     ContentType = "image/jpg"
+	ContentTypeImageWebP                    ContentType = "image/webp"
+	ContentTypeImageGIF                     ContentType = "image/gif"
+	ContentTypeImageSVGXML                  ContentType = "image/svg+xml"
+	ContentTypeImageTIFF                    ContentType = "image/tiff"
+	ContentTypeImageBMP                     ContentType = "image/bmp"
+	ContentTypeImageAVIF                    ContentType = "image/avif"
+	ContentTypeImageHEIC                    ContentType = "image/heic"
+	ContentTypeAudioMPEG                    ContentType = "audio/mpeg"
+	ContentTypeAudioMP3                     ContentType = "audio/mp3"
+	ContentTypeAudioWAV                     ContentType = "audio/wav"
+	ContentTypeAudioOGG                     ContentType = "audio/ogg"
+	ContentTypeAudioOGA                     ContentType = "audio/oga"
+	ContentTypeAudioAAC                     ContentType = "audio/aac"
+	ContentTypeAudioMP4                     ContentType = "audio/mp4"
+	ContentTypeAudioFLAC                    ContentType = "audio/flac"
+	ContentTypeAudioOpus                    ContentType = "audio/opus"
+	ContentTypeAudioWebM                    ContentType = "audio/webm"
+	ContentTypeVideoMP4                     ContentType = "video/mp4"
+	ContentTypeVideoWebM                    ContentType = "video/webm"
+	ContentTypeVideoOGG                     ContentType = "video/ogg"
+	ContentTypeVideoMPEG                    ContentType = "video/mpeg"
+	ContentTypeVideoQuickTime               ContentType = "video/quicktime"
+	ContentTypeVideoAVI                     ContentType = "video/x-msvideo"
+	ContentTypeVideoMatroska                ContentType = "video/x-matroska"
+	ContentTypeTextPlain                    ContentType = "text/plain"
+	ContentTypeTextHTML                     ContentType = "text/html"
+	ContentTypeTextCSS                      ContentType = "text/css"
+	ContentTypeTextCSV                      ContentType = "text/csv"
+	ContentTypeTextMarkdown                 ContentType = "text/markdown"
+	ContentTypeTextPython                   ContentType = "text/x-python"
+	ContentTypeApplicationJavaScript        ContentType = "application/javascript"
+	ContentTypeTextTypeScript               ContentType = "text/x-typescript"
+	ContentTypeApplicationYAML              ContentType = "application/x-yaml"
+	ContentTypeApplicationPDF               ContentType = "application/pdf"
+	ContentTypeApplicationMSWord            ContentType = "application/msword"
+	ContentTypeApplicationMSExcel           ContentType = "application/vnd.ms-excel"
+	ContentTypeApplicationExcelOpenXML      ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	ContentTypeApplicationZIP               ContentType = "application/zip"
+	ContentTypeApplicationJSON              ContentType = "application/json"
+	ContentTypeApplicationXML               ContentType = "application/xml"
+	ContentTypeApplicationOctetStream       ContentType = "application/octet-stream"
+	ContentTypeApplicationWordOpenXML       ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	ContentTypeApplicationPowerPointOpenXML ContentType = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+	ContentTypeApplicationRTF               ContentType = "application/rtf"
+	ContentTypeApplicationNDJSON            ContentType = "application/x-ndjson"
+	ContentTypeApplicationParquet           ContentType = "application/vnd.apache.parquet"
+	ContentTypeApplicationGZIP              ContentType = "application/gzip"
+	ContentTypeApplicationTAR               ContentType = "application/x-tar"
+	ContentTypeApplication7Zip              ContentType = "application/x-7z-compressed"
 )
 
 // GetUploadURLRequest represents the request to get a presigned upload URL for media.
 type GetUploadURLRequest struct {
-	TraceID       string      `json:"traceId"`
+	TraceID       string      `json:"traceId,omitempty"`
 	ObservationID string      `json:"observationId,omitempty"`
+	DatasetID     string      `json:"datasetId,omitempty"`
+	DatasetItemID string      `json:"datasetItemId,omitempty"`
 	ContentType   ContentType `json:"contentType"`
 	ContentLength int         `json:"contentLength"`
 	SHA256Hash    string      `json:"sha256Hash"`
@@ -66,8 +91,8 @@ type GetUploadURLRequest struct {
 }
 
 func (r *GetUploadURLRequest) validate() error {
-	if r.TraceID == "" {
-		return errors.New("'traceId' is required")
+	if err := validateMediaContext(r.TraceID, r.ObservationID, r.DatasetID, r.DatasetItemID, r.Field); err != nil {
+		return err
 	}
 	if r.ContentType == "" {
 		return errors.New("'contentType' is required")
@@ -84,11 +109,30 @@ func (r *GetUploadURLRequest) validate() error {
 	if _, err := base64.StdEncoding.DecodeString(r.SHA256Hash); err != nil {
 		return errors.New("'sha256Hash' must be a valid base64 encoded string")
 	}
-	if r.Field == "" {
+	return nil
+}
+
+func validateMediaContext(traceID, observationID, datasetID, datasetItemID, field string) error {
+	hasTraceContext := traceID != "" || observationID != ""
+	hasDatasetContext := datasetID != "" || datasetItemID != ""
+	if hasTraceContext == hasDatasetContext {
+		return errors.New("exactly one media context is required: trace or dataset item")
+	}
+	if hasTraceContext && traceID == "" {
+		return errors.New("'traceId' is required for trace media")
+	}
+	if hasDatasetContext && (datasetID == "" || datasetItemID == "") {
+		return errors.New("'datasetId' and 'datasetItemId' are required for dataset item media")
+	}
+	if field == "" {
 		return errors.New("'field' is required")
 	}
-	if r.Field != "input" && r.Field != "output" && r.Field != "metadata" {
-		return fmt.Errorf("'field' must be one of: input, output, metadata")
+	if hasDatasetContext {
+		if field != "input" && field != "expectedOutput" && field != "metadata" {
+			return errors.New("'field' must be one of: input, expectedOutput, metadata for dataset item media")
+		}
+	} else if field != "input" && field != "output" && field != "metadata" {
+		return errors.New("'field' must be one of: input, output, metadata for trace media")
 	}
 	return nil
 }
@@ -214,25 +258,21 @@ func (c *Client) Patch(ctx context.Context, mediaID string, request *PatchMediaR
 
 // UploadFromBytesRequest represents the request for uploading media from bytes.
 type UploadFromBytesRequest struct {
-	TraceID       string      `json:"traceId"`
+	TraceID       string      `json:"traceId,omitempty"`
 	ObservationID string      `json:"observationId,omitempty"`
+	DatasetID     string      `json:"datasetId,omitempty"`
+	DatasetItemID string      `json:"datasetItemId,omitempty"`
 	ContentType   ContentType `json:"contentType"`
 	Field         string      `json:"field"`
 	Data          []byte      `json:"-"` // Not serialized to JSON
 }
 
 func (r *UploadFromBytesRequest) validate() error {
-	if r.TraceID == "" {
-		return errors.New("'traceId' is required")
+	if err := validateMediaContext(r.TraceID, r.ObservationID, r.DatasetID, r.DatasetItemID, r.Field); err != nil {
+		return err
 	}
 	if r.ContentType == "" {
 		return errors.New("'contentType' is required")
-	}
-	if r.Field == "" {
-		return errors.New("'field' is required")
-	}
-	if r.Field != "input" && r.Field != "output" && r.Field != "metadata" {
-		return fmt.Errorf("'field' must be one of: input, output, metadata")
 	}
 	if len(r.Data) == 0 {
 		return errors.New("'data' is required")
@@ -242,22 +282,18 @@ func (r *UploadFromBytesRequest) validate() error {
 
 // UploadFileRequest represents the request for uploading a media file.
 type UploadFileRequest struct {
-	TraceID       string      `json:"traceId"`
+	TraceID       string      `json:"traceId,omitempty"`
 	ObservationID string      `json:"observationId,omitempty"`
+	DatasetID     string      `json:"datasetId,omitempty"`
+	DatasetItemID string      `json:"datasetItemId,omitempty"`
 	ContentType   ContentType `json:"contentType"`
 	Field         string      `json:"field"`
 	FilePath      string      `json:"-"` // Not serialized to JSON
 }
 
 func (r *UploadFileRequest) validate() error {
-	if r.TraceID == "" {
-		return errors.New("'traceId' is required")
-	}
-	if r.Field == "" {
-		return errors.New("'field' is required")
-	}
-	if r.Field != "input" && r.Field != "output" && r.Field != "metadata" {
-		return fmt.Errorf("'field' must be one of: input, output, metadata")
+	if err := validateMediaContext(r.TraceID, r.ObservationID, r.DatasetID, r.DatasetItemID, r.Field); err != nil {
+		return err
 	}
 	if r.FilePath == "" {
 		return errors.New("'filePath' is required")
@@ -287,6 +323,8 @@ func (c *Client) UploadFromBytes(ctx context.Context, request *UploadFromBytesRe
 	uploadURLReq := &GetUploadURLRequest{
 		TraceID:       request.TraceID,
 		ObservationID: request.ObservationID,
+		DatasetID:     request.DatasetID,
+		DatasetItemID: request.DatasetItemID,
 		ContentType:   request.ContentType,
 		ContentLength: len(request.Data),
 		SHA256Hash:    sha256Hash,
@@ -382,6 +420,8 @@ func (c *Client) UploadFile(ctx context.Context, request *UploadFileRequest) (*U
 	return c.UploadFromBytes(ctx, &UploadFromBytesRequest{
 		TraceID:       request.TraceID,
 		ObservationID: request.ObservationID,
+		DatasetID:     request.DatasetID,
+		DatasetItemID: request.DatasetItemID,
 		ContentType:   contentType,
 		Field:         request.Field,
 		Data:          data,

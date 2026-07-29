@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/git-hulk/langfuse-go/pkg/common"
 )
@@ -17,17 +19,44 @@ import (
 // along with metadata and optional links to source traces or observations.
 // Items can have various statuses and are timestamped for audit purposes.
 type DatasetItem struct {
-	ID                  string    `json:"id,omitempty"`
-	DatasetID           string    `json:"datasetId,omitempty"`
-	DatasetName         string    `json:"datasetName,omitempty"`
-	Input               any       `json:"input,omitempty"`
-	ExpectedOutput      any       `json:"expectedOutput,omitempty"`
-	Metadata            any       `json:"metadata,omitempty"`
-	SourceTraceID       string    `json:"sourceTraceId,omitempty"`
-	SourceObservationID string    `json:"sourceObservationId,omitempty"`
-	Status              string    `json:"status,omitempty"`
-	CreatedAt           time.Time `json:"createdAt,omitempty"`
-	UpdatedAt           time.Time `json:"updatedAt,omitempty"`
+	ID                  string                      `json:"id,omitempty"`
+	DatasetID           string                      `json:"datasetId,omitempty"`
+	DatasetName         string                      `json:"datasetName,omitempty"`
+	Input               any                         `json:"input,omitempty"`
+	ExpectedOutput      any                         `json:"expectedOutput,omitempty"`
+	Metadata            any                         `json:"metadata,omitempty"`
+	SourceTraceID       string                      `json:"sourceTraceId,omitempty"`
+	SourceObservationID string                      `json:"sourceObservationId,omitempty"`
+	Status              string                      `json:"status,omitempty"`
+	CreatedAt           time.Time                   `json:"createdAt,omitempty"`
+	UpdatedAt           time.Time                   `json:"updatedAt,omitempty"`
+	MediaReferences     []DatasetItemMediaReference `json:"mediaReferences,omitempty"`
+}
+
+// DatasetItemMediaReferenceField identifies the dataset item field containing a media reference.
+type DatasetItemMediaReferenceField string
+
+const (
+	DatasetItemMediaReferenceFieldInput          DatasetItemMediaReferenceField = "input"
+	DatasetItemMediaReferenceFieldExpectedOutput DatasetItemMediaReferenceField = "expectedOutput"
+	DatasetItemMediaReferenceFieldMetadata       DatasetItemMediaReferenceField = "metadata"
+)
+
+// DatasetItemMediaReference describes a resolved Langfuse media reference in a dataset item.
+type DatasetItemMediaReference struct {
+	Field           DatasetItemMediaReferenceField `json:"field"`
+	ReferenceString string                         `json:"referenceString"`
+	JSONPath        string                         `json:"jsonPath"`
+	Media           DatasetItemMedia               `json:"media"`
+}
+
+// DatasetItemMedia contains metadata and a signed download URL for resolved media.
+type DatasetItemMedia struct {
+	MediaID       string `json:"mediaId"`
+	ContentType   string `json:"contentType"`
+	ContentLength int64  `json:"contentLength"`
+	URL           string `json:"url"`
+	URLExpiry     string `json:"urlExpiry"`
 }
 
 // CreateDatasetItemRequest represents the parameters for creating a new dataset item.
@@ -49,6 +78,9 @@ type CreateDatasetItemRequest struct {
 func (c *CreateDatasetItemRequest) validate() error {
 	if c.DatasetName == "" {
 		return errors.New("'datasetName' is required")
+	}
+	if utf8.RuneCountInString(c.ID) > 255 {
+		return errors.New("'id' must not exceed 255 characters")
 	}
 	return nil
 }
@@ -75,6 +107,7 @@ type ListDatasetItemParams struct {
 	DatasetName         string
 	SourceTraceID       string
 	SourceObservationID string
+	Version             time.Time
 	Page                int
 	Limit               int
 }
@@ -90,6 +123,9 @@ func (query *ListDatasetItemParams) ToQueryString() string {
 	}
 	if query.SourceObservationID != "" {
 		parts = append(parts, "sourceObservationId="+query.SourceObservationID)
+	}
+	if !query.Version.IsZero() {
+		parts = append(parts, "version="+url.QueryEscape(query.Version.Format(time.RFC3339)))
 	}
 	if query.Page != 0 {
 		parts = append(parts, "page="+strconv.Itoa(query.Page))

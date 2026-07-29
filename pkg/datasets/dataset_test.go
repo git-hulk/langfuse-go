@@ -26,9 +26,11 @@ func TestCreateDatasetRequest_validate(t *testing.T) {
 		{
 			name: "valid request with all fields",
 			request: CreateDatasetRequest{
-				Name:        "test-dataset",
-				Description: "A test dataset",
-				Metadata:    map[string]any{"version": "1.0"},
+				Name:                 "test-dataset",
+				Description:          "A test dataset",
+				Metadata:             map[string]any{"version": "1.0"},
+				InputSchema:          map[string]any{"type": "object"},
+				ExpectedOutputSchema: map[string]any{"type": "string"},
 			},
 			wantErr: false,
 		},
@@ -116,13 +118,15 @@ func TestClient_Get(t *testing.T) {
 			require.Equal(t, "GET", r.Method)
 
 			dataset := Dataset{
-				ID:          "dataset-123",
-				Name:        datasetName,
-				Description: "Test dataset description",
-				Metadata:    map[string]any{"version": "1.0"},
-				ProjectID:   "project-456",
-				CreatedAt:   mustParseTime("2023-01-01T10:00:00Z"),
-				UpdatedAt:   mustParseTime("2023-01-02T11:00:00Z"),
+				ID:                   "dataset-123",
+				Name:                 datasetName,
+				Description:          "Test dataset description",
+				Metadata:             map[string]any{"version": "1.0"},
+				InputSchema:          map[string]any{"type": "object"},
+				ExpectedOutputSchema: map[string]any{"type": "string"},
+				ProjectID:            "project-456",
+				CreatedAt:            mustParseTime("2023-01-01T10:00:00Z"),
+				UpdatedAt:            mustParseTime("2023-01-02T11:00:00Z"),
 			}
 
 			w.Header().Set("Content-Type", "application/json")
@@ -141,6 +145,8 @@ func TestClient_Get(t *testing.T) {
 		require.Equal(t, datasetName, result.Name)
 		require.Equal(t, "Test dataset description", result.Description)
 		require.Equal(t, "project-456", result.ProjectID)
+		require.Equal(t, "object", result.InputSchema.(map[string]any)["type"])
+		require.Equal(t, "string", result.ExpectedOutputSchema.(map[string]any)["type"])
 	})
 
 	t.Run("get with empty dataset name", func(t *testing.T) {

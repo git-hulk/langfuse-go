@@ -24,6 +24,7 @@ const (
 	ViewTraces            View = "traces"
 	ViewObservations      View = "observations"
 	ViewScoresNumeric     View = "scores-numeric"
+	ViewScoresBoolean     View = "scores-boolean"
 	ViewScoresCategorical View = "scores-categorical"
 )
 
@@ -66,6 +67,7 @@ var validViews = map[View]struct{}{
 	ViewTraces:            {},
 	ViewObservations:      {},
 	ViewScoresNumeric:     {},
+	ViewScoresBoolean:     {},
 	ViewScoresCategorical: {},
 }
 
@@ -105,6 +107,9 @@ var validMeasuresByView = map[View]map[string]struct{}{
 	ViewScoresNumeric: {
 		MeasureCount: {},
 		MeasureValue: {},
+	},
+	ViewScoresBoolean: {
+		MeasureCount: {},
 	},
 	ViewScoresCategorical: {
 		MeasureCount: {},

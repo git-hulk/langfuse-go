@@ -27,22 +27,63 @@ type TokenizerConfig struct {
 	TokensPerMessage int `json:"tokensPerMessage,omitempty"`
 }
 
+// ModelPrice is a price in USD for one usage unit.
+type ModelPrice struct {
+	Price float64 `json:"price"`
+}
+
+// PricingTierOperator is a comparison operator used by pricing tier conditions.
+type PricingTierOperator string
+
+const (
+	PricingTierOperatorGreaterThan        PricingTierOperator = "gt"
+	PricingTierOperatorGreaterThanOrEqual PricingTierOperator = "gte"
+	PricingTierOperatorLessThan           PricingTierOperator = "lt"
+	PricingTierOperatorLessThanOrEqual    PricingTierOperator = "lte"
+	PricingTierOperatorEqual              PricingTierOperator = "eq"
+	PricingTierOperatorNotEqual           PricingTierOperator = "neq"
+)
+
+// PricingTierCondition selects a pricing tier by comparing matching usage details.
+type PricingTierCondition struct {
+	UsageDetailPattern string              `json:"usageDetailPattern"`
+	Operator           PricingTierOperator `json:"operator"`
+	Value              float64             `json:"value"`
+	CaseSensitive      bool                `json:"caseSensitive"`
+}
+
+// PricingTier defines conditional prices for a model.
+//
+// ID is returned by Langfuse and is omitted when the tier is used in a create request.
+type PricingTier struct {
+	ID         string                 `json:"id,omitempty"`
+	Name       string                 `json:"name"`
+	IsDefault  bool                   `json:"isDefault"`
+	Priority   int                    `json:"priority"`
+	Conditions []PricingTierCondition `json:"conditions"`
+	Prices     map[string]float64     `json:"prices"`
+}
+
 // ModelEntry represents a model configuration with pricing and metadata.
 //
 // A model entry defines how a model is identified (via name and match pattern),
 // its pricing structure for input/output tokens, and tokenization configuration.
 // Models are used for cost tracking and analytics in Langfuse.
 type ModelEntry struct {
-	ID              string          `json:"id,omitempty"`
-	ModelName       string          `json:"modelName"`
-	MatchPattern    string          `json:"matchPattern,omitempty"`
-	StartDate       time.Time       `json:"startDate,omitempty"`
-	InputPrice      float64         `json:"inputPrice,omitempty"`
-	OutputPrice     float64         `json:"outputPrice,omitempty"`
-	TotalPrice      float64         `json:"totalPrice,omitempty"`
-	Unit            string          `json:"unit"`
-	TokenizerId     string          `json:"tokenizerId,omitempty"`
-	TokenizerConfig TokenizerConfig `json:"tokenizerConfig,omitempty"`
+	ID                string                `json:"id,omitempty"`
+	ModelName         string                `json:"modelName"`
+	MatchPattern      string                `json:"matchPattern,omitempty"`
+	StartDate         time.Time             `json:"startDate,omitempty"`
+	InputPrice        float64               `json:"inputPrice,omitempty"`
+	OutputPrice       float64               `json:"outputPrice,omitempty"`
+	TotalPrice        float64               `json:"totalPrice,omitempty"`
+	Unit              string                `json:"unit"`
+	TokenizerId       string                `json:"tokenizerId,omitempty"`
+	TokenizerConfig   TokenizerConfig       `json:"tokenizerConfig,omitempty"`
+	IsLangfuseManaged bool                  `json:"isLangfuseManaged,omitempty"`
+	CreatedAt         time.Time             `json:"createdAt,omitempty"`
+	Prices            map[string]ModelPrice `json:"prices,omitempty"`
+	PricingTiers      []PricingTier         `json:"pricingTiers,omitempty"`
 }
 
 func (m *ModelEntry) validate() error {

@@ -210,6 +210,8 @@ func TestClient_CreateDatasetRunItems(t *testing.T) {
 		datasetItemId := "dataset-item-1"
 		traceId := "trace-1"
 		observationId := "observation-1"
+		datasetVersion := mustParseTime("2026-07-28T10:00:00Z")
+		createdAt := mustParseTime("2026-07-29T10:00:00Z")
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			require.Equal(t, "/dataset-run-items", r.URL.Path)
@@ -222,6 +224,8 @@ func TestClient_CreateDatasetRunItems(t *testing.T) {
 			require.Equal(t, datasetItemId, req.DatasetItemID)
 			require.Equal(t, traceId, req.TraceID)
 			require.Equal(t, observationId, req.ObservationID)
+			require.Equal(t, datasetVersion, *req.DatasetVersion)
+			require.Equal(t, createdAt, *req.CreatedAt)
 
 			runItem := DatasetRunItem{
 				ID:             "run-item-1",
@@ -244,10 +248,12 @@ func TestClient_CreateDatasetRunItems(t *testing.T) {
 		datasetClient := NewClient(client)
 
 		req := CreateDatasetRunItemRequest{
-			RunName:       runName,
-			DatasetItemID: datasetItemId,
-			TraceID:       traceId,
-			ObservationID: observationId,
+			RunName:        runName,
+			DatasetItemID:  datasetItemId,
+			TraceID:        traceId,
+			ObservationID:  observationId,
+			DatasetVersion: &datasetVersion,
+			CreatedAt:      &createdAt,
 		}
 		result, err := datasetClient.CreateDatasetRunItems(ctx, req)
 		require.NoError(t, err)

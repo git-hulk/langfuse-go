@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/git-hulk/langfuse-go/pkg/common"
 
@@ -57,6 +58,9 @@ func (c *CommentEntry) validate() error {
 	if c.Content == "" {
 		return errors.New("'content' is required")
 	}
+	if utf8.RuneCountInString(c.Content) > 5000 {
+		return errors.New("'content' must not exceed 5000 characters")
+	}
 	return nil
 }
 
@@ -84,6 +88,9 @@ func (c *CreateCommentRequest) validate() error {
 	}
 	if c.Content == "" {
 		return errors.New("'content' is required")
+	}
+	if utf8.RuneCountInString(c.Content) > 5000 {
+		return errors.New("'content' must not exceed 5000 characters")
 	}
 	return nil
 }

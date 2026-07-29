@@ -26,13 +26,14 @@ const (
 
 // QueueObjectType represents the type of object that can be queued for annotation.
 //
-// Currently supports traces and observations as the object types
+// Supports traces, observations, and sessions as the object types
 // that can be added to annotation queues.
 type QueueObjectType string
 
 const (
 	ObjectTypeTrace       QueueObjectType = "TRACE"
 	ObjectTypeObservation QueueObjectType = "OBSERVATION"
+	ObjectTypeSession     QueueObjectType = "SESSION"
 )
 
 // Item represents an annotation queue item.
@@ -61,8 +62,8 @@ func (r *CreateItemRequest) validate() error {
 	if r.ObjectType == "" {
 		return errors.New("'objectType' is required")
 	}
-	if r.ObjectType != ObjectTypeTrace && r.ObjectType != ObjectTypeObservation {
-		return fmt.Errorf("invalid 'objectType': %s, must be one of [TRACE, OBSERVATION]", r.ObjectType)
+	if r.ObjectType != ObjectTypeTrace && r.ObjectType != ObjectTypeObservation && r.ObjectType != ObjectTypeSession {
+		return fmt.Errorf("invalid 'objectType': %s, must be one of [TRACE, OBSERVATION, SESSION]", r.ObjectType)
 	}
 	if r.Status != "" && r.Status != StatusPending && r.Status != StatusCompleted {
 		return fmt.Errorf("invalid 'status': %s, must be one of [PENDING, COMPLETED]", r.Status)

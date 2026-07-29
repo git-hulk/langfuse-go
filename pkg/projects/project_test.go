@@ -46,6 +46,7 @@ func TestCreateProjectRequest_validate(t *testing.T) {
 }
 
 func TestUpdateProjectRequest_validate(t *testing.T) {
+	retention60 := 60
 	tests := []struct {
 		name    string
 		req     UpdateProjectRequest
@@ -54,13 +55,13 @@ func TestUpdateProjectRequest_validate(t *testing.T) {
 	}{
 		{
 			"valid request",
-			UpdateProjectRequest{Name: "updated-project", Retention: 60},
+			UpdateProjectRequest{Name: "updated-project", Retention: &retention60},
 			false,
 			"",
 		},
 		{
 			"missing name",
-			UpdateProjectRequest{Retention: 60},
+			UpdateProjectRequest{Retention: &retention60},
 			true,
 			"'name' is required",
 		},
@@ -85,7 +86,11 @@ func TestProjectClient_Get(t *testing.T) {
 			require.Equal(t, "GET", r.Method)
 			projects := ProjectsResponse{
 				Data: []Project{
-					{ID: "project-1", Name: "Test Project 1"},
+					{
+						ID:           "project-1",
+						Name:         "Test Project 1",
+						Organization: Organization{ID: "org-1", Name: "Test Organization"},
+					},
 					{ID: "project-2", Name: "Test Project 2"},
 				},
 			}
@@ -102,6 +107,7 @@ func TestProjectClient_Get(t *testing.T) {
 	require.Len(t, projects.Data, 2)
 	require.Equal(t, "project-1", projects.Data[0].ID)
 	require.Equal(t, "Test Project 1", projects.Data[0].Name)
+	require.Equal(t, "org-1", projects.Data[0].Organization.ID)
 	require.Equal(t, "project-2", projects.Data[1].ID)
 	require.Equal(t, "Test Project 2", projects.Data[1].Name)
 }
@@ -167,14 +173,14 @@ func TestProjectClient_Update(t *testing.T) {
 			err := json.NewDecoder(r.Body).Decode(&req)
 			require.NoError(t, err)
 			require.Equal(t, "updated-project", req.Name)
-			require.Equal(t, 60, req.Retention)
+			require.Equal(t, 60, *req.Retention)
 
 			// Return the updated project
 			project := Project{
 				ID:            "test-project-id",
 				Name:          req.Name,
 				Metadata:      req.Metadata,
-				RetentionDays: req.Retention,
+				RetentionDays: *req.Retention,
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -186,10 +192,11 @@ func TestProjectClient_Update(t *testing.T) {
 	cli := resty.New().SetBaseURL(server.URL)
 	client := NewClient(cli)
 
+	retention := 60
 	updateReq := &UpdateProjectRequest{
 		Name:      "updated-project",
 		Metadata:  map[string]any{"updated": "true"},
-		Retention: 60,
+		Retention: &retention,
 	}
 
 	project, err := client.Update(context.Background(), "test-project-id", updateReq)
@@ -202,7 +209,8 @@ func TestProjectClient_Update(t *testing.T) {
 func TestProjectClient_Update_MissingProjectID(t *testing.T) {
 	cli := resty.New()
 	client := NewClient(cli)
-	updateReq := &UpdateProjectRequest{Name: "test", Retention: 30}
+	retention := 30
+	updateReq := &UpdateProjectRequest{Name: "test", Retention: &retention}
 	_, err := client.Update(context.Background(), "", updateReq)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "'projectID' is required")
@@ -308,6 +316,8 @@ func TestProjectClient_CreateApiKey(t *testing.T) {
 			var req CreateAPIKeyRequest
 			err := json.NewDecoder(r.Body).Decode(&req)
 			require.NoError(t, err)
+			require.Equal(t, "pk-lf-custom", req.PublicKey)
+			require.Equal(t, "sk-lf-custom", req.SecretKey)
 
 			note := "Test API Key"
 			if req.Note != "" {
@@ -334,7 +344,11 @@ func TestProjectClient_CreateApiKey(t *testing.T) {
 	client := NewClient(cli)
 
 	note := "Test API Key"
-	createReq := &CreateAPIKeyRequest{Note: note}
+	createReq := &CreateAPIKeyRequest{
+		Note:      note,
+		PublicKey: "pk-lf-custom",
+		SecretKey: "sk-lf-custom",
+	}
 
 	apiKey, err := client.CreateAPIKey(context.Background(), "test-project-id", createReq)
 	require.NoError(t, err)
