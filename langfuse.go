@@ -9,8 +9,8 @@
 //	client := langfuse.NewClient("https://cloud.langfuse.com", "your-public-key", "your-secret-key")
 //	defer client.Close()
 //
-//	trace := client.StartTrace("my-application")
-//	span := trace.StartSpan("processing-step")
+//	ctx, trace := client.StartTrace(ctx, "my-application")
+//	ctx, span := trace.StartSpan(ctx, "processing-step")
 //	// ... your application logic
 //	span.End()
 //	trace.End()
@@ -64,7 +64,7 @@ type Langfuse struct {
 }
 
 type traceIngestor interface {
-	StartTrace(ctx context.Context, name string) *traces.Trace
+	StartTrace(ctx context.Context, name string) (context.Context, *traces.Trace)
 	Flush()
 	Close() error
 }
@@ -160,8 +160,10 @@ func (c *Langfuse) Flush() {
 // multiple observations (spans). Traces are automatically batched and sent to
 // Langfuse for efficient ingestion.
 //
-// Returns a Trace instance that you can use to add observations and metadata.
-func (c *Langfuse) StartTrace(ctx context.Context, name string) *traces.Trace {
+// Returns the context carrying the trace span and a Trace instance that you can use
+// to add observations and metadata. Pass the returned context to the trace's StartXXX
+// methods so the observations are nested under this trace.
+func (c *Langfuse) StartTrace(ctx context.Context, name string) (context.Context, *traces.Trace) {
 	return c.ingestor.StartTrace(ctx, name)
 }
 

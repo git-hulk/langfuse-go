@@ -63,13 +63,16 @@ func NewOtelIngestor(host, publicKey, secretKey string, opts ...OtelIngestorOpti
 	}, nil
 }
 
-func (oi *OtelIngestor) StartTrace(ctx context.Context, name string) *Trace {
+// StartTrace creates a new trace rooted at a new OTel span.
+//
+// Returns the context carrying the trace span and the Trace itself. Pass the returned
+// context to the trace's StartXXX methods to nest observations under this trace.
+func (oi *OtelIngestor) StartTrace(ctx context.Context, name string) (context.Context, *Trace) {
 	ctx, span := oi.tracer.Start(ctx, name)
 	sc := span.SpanContext()
-	return &Trace{
-		Span:    span,
-		tracer:  oi.tracer,
-		otelCtx: ctx,
+	return ctx, &Trace{
+		Span:   span,
+		tracer: oi.tracer,
 		TraceEntry: TraceEntry{
 			ID:   sc.TraceID().String(),
 			Name: name,

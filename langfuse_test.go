@@ -108,24 +108,24 @@ func TestTrace(t *testing.T) {
 	defer client.Close()
 
 	// Create a trace
-	trace := client.StartTrace(context.Background(), "Test Trace")
+	traceCtx, trace := client.StartTrace(context.Background(), "Test Trace")
 	trace.Input = map[string]string{"input": "Test input"}
 	trace.Output = map[string]string{"output": "Test output"}
 	trace.Tags = []string{"test", "example"}
 
 	// Test Agent type observation
-	agent := trace.StartObservation("test_agent", traces.ObservationTypeAgent)
+	agentCtx, agent := trace.StartObservation(traceCtx, "test_agent", traces.ObservationTypeAgent)
 	agent.Input = map[string]string{"input": "Test agent input"}
 	agent.Output = map[string]string{"output": "Test agent output"}
 
 	// Test Retriever type observation
-	retriever := trace.StartObservation("test_retriever", traces.ObservationTypeRetriever)
+	_, retriever := trace.StartObservation(agentCtx, "test_retriever", traces.ObservationTypeRetriever)
 	retriever.Input = map[string]string{"input": "Test retriever input"}
 	retriever.Output = map[string]string{"output": "Test retriever output"}
 	retriever.End()
 
 	// Test Generation type observation (LLM)
-	llm := trace.StartGeneration("test_generation")
+	_, llm := trace.StartGeneration(agentCtx, "test_generation")
 	llm.Input = map[string]string{"input": "Test generation input"}
 	llm.Output = map[string]string{"output": "Test generation output"}
 	llm.Usage = traces.Usage{
@@ -137,7 +137,7 @@ func TestTrace(t *testing.T) {
 	llm.End()
 
 	// Test Tool type observation
-	tool := trace.StartObservation("test_tool", traces.ObservationTypeTool)
+	_, tool := trace.StartObservation(agentCtx, "test_tool", traces.ObservationTypeTool)
 	tool.Input = map[string]string{"input": "Test tool input"}
 	tool.Output = map[string]string{"output": "Test tool output"}
 	tool.End()

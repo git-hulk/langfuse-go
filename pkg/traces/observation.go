@@ -1,7 +1,6 @@
 package traces
 
 import (
-	"context"
 	"time"
 
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -65,9 +64,6 @@ type Observation struct {
 	Level               ObservationLevel `json:"level,omitempty"`
 	StatusMessage       string           `json:"statusMessage,omitempty"`
 	Environment         string           `json:"environment,omitempty"`
-
-	otelCtx       context.Context
-	parentOtelCtx context.Context
 }
 
 // End finalizes the observation by exporting the OTel span.

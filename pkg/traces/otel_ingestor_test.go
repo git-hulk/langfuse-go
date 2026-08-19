@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 func newTestOtelIngestor(t *testing.T) (*OtelIngestor, *tracetest.InMemoryExporter) {
@@ -23,14 +24,14 @@ func TestOtelIngestor_StartTrace(t *testing.T) {
 	ingestor, _ := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
-	trace := ingestor.StartTrace(context.Background(), "test-trace")
+	ctx, trace := ingestor.StartTrace(context.Background(), "test-trace")
 
+	require.NotNil(t, ctx)
 	require.NotNil(t, trace)
 	assert.Equal(t, "test-trace", trace.Name)
 	assert.NotEmpty(t, trace.ID)
 	assert.Len(t, trace.ID, 32)
-	assert.NotNil(t, trace.otelCtx)
-	assert.Nil(t, trace.lastObservation)
+	assert.Equal(t, trace.SpanContext().SpanID(), oteltrace.SpanFromContext(ctx).SpanContext().SpanID())
 }
 
 func TestOtelIngestor_TraceUniqueIDs(t *testing.T) {
@@ -39,7 +40,7 @@ func TestOtelIngestor_TraceUniqueIDs(t *testing.T) {
 
 	ids := make(map[string]bool)
 	for i := 0; i < 100; i++ {
-		trace := ingestor.StartTrace(context.Background(), "test")
+		_, trace := ingestor.StartTrace(context.Background(), "test")
 		require.False(t, ids[trace.ID], "duplicate trace ID: %s", trace.ID)
 		ids[trace.ID] = true
 		trace.End()
@@ -50,7 +51,7 @@ func TestOtelIngestor_EndTrace_ExportsSpan(t *testing.T) {
 	ingestor, exporter := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
-	trace := ingestor.StartTrace(context.Background(), "exported-trace")
+	_, trace := ingestor.StartTrace(context.Background(), "exported-trace")
 	trace.Input = "hello"
 	trace.Output = "world"
 	trace.UserID = "user-1"
@@ -81,8 +82,8 @@ func TestOtelIngestor_StartObservation(t *testing.T) {
 	ingestor, _ := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
-	trace := ingestor.StartTrace(context.Background(), "trace")
-	obs := trace.StartObservation("my-agent", ObservationTypeAgent)
+	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
+	obsCtx, obs := trace.StartObservation(ctx, "my-agent", ObservationTypeAgent)
 
 	require.NotNil(t, obs)
 	assert.Equal(t, "my-agent", obs.Name)
@@ -90,17 +91,17 @@ func TestOtelIngestor_StartObservation(t *testing.T) {
 	obsID := obs.SpanContext().SpanID().String()
 	assert.NotEmpty(t, obsID)
 	assert.Len(t, obsID, 16)
-	assert.NotNil(t, obs.otelCtx)
+	assert.Equal(t, obs.SpanContext().SpanID(), oteltrace.SpanFromContext(obsCtx).SpanContext().SpanID())
 }
 
 func TestOtelIngestor_ObservationParentChild(t *testing.T) {
 	ingestor, exporter := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
-	trace := ingestor.StartTrace(context.Background(), "trace")
+	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
 
-	span1 := trace.StartSpan("span-1")
-	span2 := trace.StartSpan("span-2")
+	_, span1 := trace.StartSpan(ctx, "span-1")
+	_, span2 := trace.StartSpan(ctx, "span-2")
 
 	span2.End()
 	span1.End()
@@ -113,41 +114,41 @@ func TestOtelIngestor_ObservationParentChild(t *testing.T) {
 	for _, s := range spans {
 		spanByName[s.Name] = s
 	}
-	assert.Equal(t, spanByName["trace"].SpanContext.SpanID(), spanByName["span-1"].Parent.SpanID())
-	assert.Equal(t, spanByName["span-1"].SpanContext.SpanID(), spanByName["span-2"].Parent.SpanID())
+	traceSpanID := spanByName["trace"].SpanContext.SpanID()
+	assert.Equal(t, traceSpanID, spanByName["span-1"].Parent.SpanID())
+	assert.Equal(t, traceSpanID, spanByName["span-2"].Parent.SpanID())
 }
 
-func TestOtelIngestor_EndedSpanParenting(t *testing.T) {
+func TestOtelIngestor_NestedObservations(t *testing.T) {
 	ingestor, exporter := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
-	trace := ingestor.StartTrace(context.Background(), "trace")
+	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
 
-	parent := trace.StartSpan("parent")
-	child := trace.StartSpan("child")
-	child.End()
+	agentCtx, agent := trace.StartObservation(ctx, "agent", ObservationTypeAgent)
+	_, tool := trace.StartSpan(agentCtx, "tool")
 
-	sibling := trace.StartSpan("sibling")
-	sibling.End()
-	parent.End()
+	tool.End()
+	agent.End()
 	trace.End()
 
 	spans := exporter.GetSpans()
-	require.Len(t, spans, 4)
+	require.Len(t, spans, 3)
 
 	spanByName := make(map[string]tracetest.SpanStub)
 	for _, s := range spans {
 		spanByName[s.Name] = s
 	}
-	assert.Equal(t, spanByName["parent"].SpanContext.SpanID(), spanByName["sibling"].Parent.SpanID())
+	assert.Equal(t, spanByName["trace"].SpanContext.SpanID(), spanByName["agent"].Parent.SpanID())
+	assert.Equal(t, spanByName["agent"].SpanContext.SpanID(), spanByName["tool"].Parent.SpanID())
 }
 
 func TestOtelIngestor_Generation(t *testing.T) {
 	ingestor, exporter := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
-	trace := ingestor.StartTrace(context.Background(), "trace")
-	gen := trace.StartGeneration("llm-call")
+	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
+	_, gen := trace.StartGeneration(ctx, "llm-call")
 	gen.Model = "gpt-4"
 	gen.Input = map[string]string{"prompt": "hello"}
 	gen.Output = map[string]string{"response": "hi"}
@@ -181,7 +182,7 @@ func TestOtelIngestor_Generation(t *testing.T) {
 func TestOtelIngestor_FlushAndClose(t *testing.T) {
 	ingestor, exporter := newTestOtelIngestor(t)
 
-	trace := ingestor.StartTrace(context.Background(), "flush-test")
+	_, trace := ingestor.StartTrace(context.Background(), "flush-test")
 	trace.End()
 
 	ingestor.Flush()
@@ -191,30 +192,25 @@ func TestOtelIngestor_FlushAndClose(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestOtelIngestor_DeepNesting(t *testing.T) {
+func TestOtelIngestor_EndedSpanParenting(t *testing.T) {
 	ingestor, exporter := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
-	trace := ingestor.StartTrace(context.Background(), "trace")
+	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
 
-	l1 := trace.StartSpan("level-1")
-	l2 := trace.StartSpan("level-2")
-	l3 := trace.StartSpan("level-3")
+	_, first := trace.StartSpan(ctx, "first")
+	first.End()
 
-	l3.End()
-	l2.End()
-	l1.End()
+	_, second := trace.StartSpan(ctx, "second")
+	second.End()
 	trace.End()
 
 	spans := exporter.GetSpans()
-	require.Len(t, spans, 4)
+	require.Len(t, spans, 3)
 
 	spanByName := make(map[string]tracetest.SpanStub)
 	for _, s := range spans {
 		spanByName[s.Name] = s
 	}
-
-	assert.Equal(t, spanByName["trace"].SpanContext.SpanID(), spanByName["level-1"].Parent.SpanID())
-	assert.Equal(t, spanByName["level-1"].SpanContext.SpanID(), spanByName["level-2"].Parent.SpanID())
-	assert.Equal(t, spanByName["level-2"].SpanContext.SpanID(), spanByName["level-3"].Parent.SpanID())
+	assert.Equal(t, spanByName["trace"].SpanContext.SpanID(), spanByName["second"].Parent.SpanID())
 }

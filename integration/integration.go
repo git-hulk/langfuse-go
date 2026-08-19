@@ -48,34 +48,143 @@ func runTraceTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 	sessionID := uuid.Must(uuid.NewV4())
 	for i := 0; i < 3; i++ {
-		trace := client.StartTrace(ctx, "Test Trace")
+		traceCtx, trace := client.StartTrace(ctx, "Test Trace")
 		trace.Input = map[string]string{"input": "Test input"}
 		trace.Output = map[string]string{"output": "Test output"}
 		trace.Tags = []string{"test", "example"}
 		trace.SessionID = sessionID.String()
 
 		// Start a span within the trace
-		span := trace.StartSpan("Test Span")
+		_, span := trace.StartSpan(traceCtx, "Test Span")
 		span.Input = map[string]string{"span_input": "Processing data..."}
 		span.Output = map[string]string{"span_output": "Data processed successfully!"}
 
-		// nested span
-		childSpan := trace.StartSpan("Test ChildSpan")
-		childSpan.Input = map[string]string{"child_input": "Child span processing"}
-		childSpan.Output = map[string]string{"child_output": "Child span processed!"}
-		childSpan.End()
+		// sibling span
+		_, siblingSpan := trace.StartSpan(traceCtx, "Test SiblingSpan")
+		siblingSpan.Input = map[string]string{"sibling_input": "Sibling span processing"}
+		siblingSpan.Output = map[string]string{"sibling_output": "Sibling span processed!"}
+		siblingSpan.End()
 
 		span.End()
 
 		trace.End()
 	}
+
+	runNestedTraceTest(client)
+}
+
+// runNestedTraceTest builds a deeply nested trace that mixes observation types
+// to verify parent resolution via the OTel context returned by each StartXXX call.
+//
+// The resulting hierarchy is:
+//
+//	Complex Nested Trace
+//	├── retrieve-context (SPAN)
+//	│   └── vector-search (RETRIEVER)
+//	│       └── embed-query (EMBEDDING)
+//	├── planner-agent (AGENT)
+//	│   ├── web-search (TOOL)
+//	│   │   └── tool-call-issued (EVENT)
+//	│   ├── plan-generation (GENERATION)
+//	│   └── output-guardrail (GUARDRAIL)
+//	└── response-evaluator (EVALUATOR)
+func runNestedTraceTest(client *langfuse.Langfuse) {
+	ctx := context.Background()
+
+	fmt.Println("Testing nested complex trace...")
+	traceCtx, trace := client.StartTrace(ctx, "Complex Nested Trace")
+	trace.Input = map[string]string{"question": "What is the capital of France?"}
+	trace.Tags = []string{"test", "nested", "complex"}
+	trace.UserID = "integration-test-user"
+	trace.SessionID = uuid.Must(uuid.NewV4()).String()
+	trace.Metadata = map[string]any{"depth": 3, "scenario": "rag-agent"}
+
+	// Level 1: retrieval pipeline.
+	retrieveCtx, retrieveSpan := trace.StartSpan(traceCtx, "retrieve-context")
+	retrieveSpan.Input = map[string]string{"query": "capital of France"}
+
+	// Level 2: retriever nested under the retrieval span.
+	retrieverCtx, retriever := trace.StartObservation(retrieveCtx, "vector-search", traces.ObservationTypeRetriever)
+	retriever.Input = map[string]any{"topK": 3, "index": "wiki"}
+
+	// Level 3: embedding nested under the retriever.
+	_, embedding := trace.StartObservation(retrieverCtx, "embed-query", traces.ObservationTypeEmbedding)
+	embedding.Model = "text-embedding-3-small"
+	embedding.Input = map[string]string{"text": "capital of France"}
+	embedding.Usage = traces.Usage{Input: 6, Total: 6, Unit: traces.UnitTokens}
+	embedding.Output = map[string]any{"dimensions": 1536}
+	embedding.End()
+
+	retriever.Output = map[string]any{
+		"documents": []string{"Paris is the capital of France.", "France is in Europe."},
+	}
+	retriever.End()
+
+	retrieveSpan.Output = map[string]any{"documentCount": 2}
+	retrieveSpan.End()
+
+	// Level 1: agent that plans and calls tools.
+	agentCtx, agentObs := trace.StartObservation(traceCtx, "planner-agent", traces.ObservationTypeAgent)
+	agentObs.Input = map[string]string{"goal": "Answer using the retrieved context"}
+
+	// Level 2: tool call issued by the agent.
+	toolCtx, tool := trace.StartObservation(agentCtx, "web-search", traces.ObservationTypeTool)
+	tool.Input = map[string]string{"query": "capital of France"}
+
+	// Level 3: event emitted while the tool runs.
+	_, event := trace.StartObservation(toolCtx, "tool-call-issued", traces.ObservationTypeEvent)
+	event.Metadata = map[string]string{"provider": "mock-search"}
+	event.End()
+
+	tool.Output = map[string]any{"hits": 1}
+	tool.End()
+
+	// Level 2: generation nested under the agent.
+	_, generation := trace.StartGeneration(agentCtx, "plan-generation")
+	generation.Model = "gpt-4o-mini"
+	generation.ModelParameters = map[string]any{"temperature": 0.0}
+	generation.Input = map[string]any{
+		"messages": []map[string]string{
+			{"role": "system", "content": "Answer strictly from the provided context."},
+			{"role": "user", "content": "What is the capital of France?"},
+		},
+	}
+	completionStart := time.Now()
+	generation.CompletionStartTime = &completionStart
+	generation.Output = map[string]string{"content": "The capital of France is Paris."}
+	generation.Usage = traces.Usage{Input: 64, Output: 12, Total: 76, Unit: traces.UnitTokens}
+	generation.End()
+
+	// Level 2: guardrail that reports a non-default level.
+	_, guardrail := trace.StartObservation(agentCtx, "output-guardrail", traces.ObservationTypeGuardrail)
+	guardrail.Input = map[string]string{"content": "The capital of France is Paris."}
+	guardrail.Level = traces.ObservationLevelWarning
+	guardrail.StatusMessage = "answer lacks a source citation"
+	guardrail.Output = map[string]any{"passed": true}
+	guardrail.End()
+
+	agentObs.Output = map[string]string{"answer": "The capital of France is Paris."}
+	agentObs.End()
+
+	// Level 1: evaluator sibling of the agent.
+	_, evaluator := trace.StartObservation(traceCtx, "response-evaluator", traces.ObservationTypeEvaluator)
+	evaluator.Input = map[string]string{"answer": "The capital of France is Paris."}
+	evaluator.Output = map[string]any{"score": 0.95, "reason": "grounded in retrieved context"}
+	evaluator.End()
+
+	trace.Output = map[string]string{"answer": "The capital of France is Paris."}
+	trace.End()
+	client.Flush()
+
+	fmt.Printf("Created nested trace %s with 8 observations across 3 levels\n", trace.ID)
+	fmt.Println("Nested complex trace test completed!")
 }
 
 func runLLMGenerationTests(client *langfuse.Langfuse) {
 	ctx := context.Background()
 
 	fmt.Println("Testing LLM Generation Observation API...")
-	trace := client.StartTrace(ctx, "LLM Generation Observation Test")
+	traceCtx, trace := client.StartTrace(ctx, "LLM Generation Observation Test")
 	trace.Input = map[string]any{
 		"messages": []map[string]string{
 			{"role": "system", "content": "You are a Langfuse integration test bot."},
@@ -84,7 +193,7 @@ func runLLMGenerationTests(client *langfuse.Langfuse) {
 	}
 	trace.Tags = []string{"llm", "integration", "observation"}
 
-	generation := trace.StartGeneration("assistant-response")
+	_, generation := trace.StartGeneration(traceCtx, "assistant-response")
 	generation.Model = "gpt-4o-mini"
 	generation.ModelParameters = map[string]any{
 		"temperature": 0.2,
@@ -315,7 +424,7 @@ func runScoreTests(client *langfuse.Langfuse) {
 	fmt.Println("Testing Score API...")
 
 	// First create a trace to score against
-	trace := client.StartTrace(ctx, "Score Test Trace")
+	_, trace := client.StartTrace(ctx, "Score Test Trace")
 	trace.Input = map[string]string{"query": "Test query for scoring"}
 	trace.Output = map[string]string{"response": "Test response"}
 	trace.End()
@@ -669,7 +778,7 @@ func runDatasetRunTests(client *langfuse.Langfuse) {
 	}
 
 	// Create a trace to link with the run
-	trace := client.StartTrace(ctx, "Dataset Run Test Trace")
+	_, trace := client.StartTrace(ctx, "Dataset Run Test Trace")
 	trace.Input = map[string]string{"query": "Test query for run"}
 	trace.Output = map[string]string{"response": "Test response for run"}
 	trace.End()
@@ -1011,7 +1120,7 @@ func runCommentTests(client *langfuse.Langfuse) {
 	fmt.Println("Testing Comment API...")
 
 	// First, create a trace to comment on
-	trace := client.StartTrace(ctx, "Comment Test Trace")
+	_, trace := client.StartTrace(ctx, "Comment Test Trace")
 	trace.Input = map[string]string{"query": "Test query for commenting"}
 	trace.Output = map[string]string{"response": "Test response for commenting"}
 	trace.End()
@@ -1159,7 +1268,7 @@ func runMediaTests(client *langfuse.Langfuse) {
 	fmt.Println("Testing Media API...")
 
 	// First, create a trace to associate media with
-	trace := client.StartTrace(ctx, "Media Test Trace")
+	traceCtx, trace := client.StartTrace(ctx, "Media Test Trace")
 	trace.Input = map[string]string{"query": "Test query with media attachment"}
 	trace.Output = map[string]string{"response": "Test response with media"}
 	trace.End()
@@ -1214,7 +1323,7 @@ func runMediaTests(client *langfuse.Langfuse) {
 	}
 
 	// Test with observation ID
-	span := trace.StartSpan("Media Test Span")
+	_, span := trace.StartSpan(traceCtx, "Media Test Span")
 	span.Input = map[string]string{"span_input": "Processing media..."}
 	span.Output = map[string]string{"span_output": "Media processed!"}
 	span.End()
@@ -1324,7 +1433,7 @@ func runAnnotationTests(client *langfuse.Langfuse) {
 	}
 
 	// Create a trace to add to the annotation queue
-	trace := client.StartTrace(ctx, "Annotation Test Trace")
+	_, trace := client.StartTrace(ctx, "Annotation Test Trace")
 	trace.Input = map[string]string{"query": "Test query for annotation"}
 	trace.Output = map[string]string{"response": "Test response for annotation"}
 	trace.End()

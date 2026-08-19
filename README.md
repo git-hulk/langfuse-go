@@ -45,8 +45,10 @@ func main() {
     langfuse := langfuse.NewClient("YOUR_HOST", "YOUR_PUBLIC_KEY", "YOUR_PRIVATE_KEY")
 
     ctx := context.Background()
-    trace := langfuse.StartTrace(ctx, "it's a trace")
-    span := trace.StartSpan("it's a span")
+    // Both calls return a context carrying the new OTel span, pass it down to
+    // nest the child observations under their parent.
+    ctx, trace := langfuse.StartTrace(ctx, "it's a trace")
+    _, span := trace.StartSpan(ctx, "it's a span")
     span.End()
     trace.End()
     langfuse.Close() // flushes all pending traces

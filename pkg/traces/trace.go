@@ -41,9 +41,7 @@ type Trace struct {
 	TraceEntry
 	oteltrace.Span
 
-	tracer          tracer
-	lastObservation *Observation
-	otelCtx         context.Context
+	tracer tracer
 }
 
 // End finalizes the trace by exporting the OTel span with trace attributes.
@@ -55,49 +53,41 @@ func (t *Trace) End() {
 	t.Span.End()
 }
 
-func (t *Trace) getParentContext() context.Context {
-	if t.lastObservation == nil {
-		return t.otelCtx
-	}
-	if t.lastObservation.IsRecording() {
-		return t.lastObservation.otelCtx
-	}
-	return t.lastObservation.parentOtelCtx
+// StartSpan creates a new observation (span) as a child of the span carried by ctx.
+//
+// The span is set to span type and linked to its parent via OpenTelemetry context
+// propagation, so pass the context returned by StartTrace to nest it under the trace,
+// or the context returned by another StartXXX call to nest it under that observation.
+// Returns the context carrying the new span and an Observation that can be used to
+// add data and end the span.
+func (t *Trace) StartSpan(ctx context.Context, name string) (context.Context, *Observation) {
+	return t.StartObservation(ctx, name, ObservationTypeSpan)
 }
 
-// StartSpan creates a new child observation (span) within this trace.
+// StartObservation creates a new observation of the specified type as a child of the
+// span carried by ctx.
 //
-// The span is automatically assigned a unique ID, set to span type, and linked
-// to this trace via OpenTelemetry context propagation.
-// Returns an Observation that can be used to add data and end the span.
-func (t *Trace) StartSpan(name string) *Observation {
-	return t.StartObservation(name, ObservationTypeSpan)
-}
-
-// StartObservation creates a new child observation of the specified type within this trace.
-//
-// The observation is automatically assigned a unique ID and linked to this trace
-// via OpenTelemetry context propagation.
-// Returns an Observation that can be used to add data and end the observation.
-func (t *Trace) StartObservation(name string, typ ObservationType) *Observation {
-	parentCtx := t.getParentContext()
-	ctx, span := t.tracer.Start(parentCtx, name)
-	observation := &Observation{
-		Span:          span,
-		Name:          name,
-		Type:          typ,
-		otelCtx:       ctx,
-		parentOtelCtx: parentCtx,
+// The observation is linked to its parent via OpenTelemetry context propagation, so
+// pass the context returned by StartTrace to nest it under the trace, or the context
+// returned by another StartXXX call to nest it under that observation.
+// Returns the context carrying the new span and an Observation that can be used to
+// add data and end the observation.
+func (t *Trace) StartObservation(ctx context.Context, name string, typ ObservationType) (context.Context, *Observation) {
+	ctx, span := t.tracer.Start(ctx, name)
+	return ctx, &Observation{
+		Span: span,
+		Name: name,
+		Type: typ,
 	}
-	t.lastObservation = observation
-	return observation
 }
 
-// StartGeneration creates a new child observation (generation) within this trace.
+// StartGeneration creates a new observation (generation) as a child of the span carried by ctx.
 //
-// The generation is automatically assigned a unique ID, set to generation type, and linked
-// to this trace via OpenTelemetry context propagation.
-// Returns an Observation that can be used to add data and end the generation.
-func (t *Trace) StartGeneration(name string) *Observation {
-	return t.StartObservation(name, ObservationTypeGeneration)
+// The generation is set to generation type and linked to its parent via OpenTelemetry
+// context propagation, so pass the context returned by StartTrace to nest it under the
+// trace, or the context returned by another StartXXX call to nest it under that observation.
+// Returns the context carrying the new span and an Observation that can be used to
+// add data and end the generation.
+func (t *Trace) StartGeneration(ctx context.Context, name string) (context.Context, *Observation) {
+	return t.StartObservation(ctx, name, ObservationTypeGeneration)
 }

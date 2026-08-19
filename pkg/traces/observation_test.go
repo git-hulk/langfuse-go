@@ -13,11 +13,11 @@ func TestObservation_End(t *testing.T) {
 	ingestor, _ := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
-	trace := ingestor.StartTrace(context.Background(), "test-trace")
-	observation := trace.StartSpan("test-span")
+	ctx, trace := ingestor.StartTrace(context.Background(), "test-trace")
+	spanCtx, observation := trace.StartSpan(ctx, "test-span")
 
-	require.NotNil(t, observation.otelCtx)
-	span := oteltrace.SpanFromContext(observation.otelCtx)
+	require.NotNil(t, spanCtx)
+	span := oteltrace.SpanFromContext(spanCtx)
 	assert.True(t, span.IsRecording())
 
 	observation.End()
