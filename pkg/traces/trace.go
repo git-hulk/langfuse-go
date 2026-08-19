@@ -6,11 +6,8 @@
 package traces
 
 import (
+	"context"
 	"time"
-
-	"go.uber.org/zap"
-
-	"github.com/git-hulk/langfuse-go/pkg/logger"
 )
 
 // TraceEntry represents the core data structure for a trace in Langfuse.
@@ -43,8 +40,9 @@ type TraceEntry struct {
 type Trace struct {
 	TraceEntry
 
-	ingestor     *Ingestor
+	handler      traceHandler
 	observations []*Observation
+	otelCtx      context.Context
 }
 
 // End finalizes the trace by calculating its latency and submitting it for batch processing.
@@ -53,13 +51,7 @@ type Trace struct {
 // then submits the trace to the batch processor for efficient ingestion to Langfuse.
 // If submission fails, an error is logged but the method does not return an error.
 func (t *Trace) End() {
-	t.Latency = time.Since(t.Timestamp).Milliseconds()
-	if err := t.ingestor.processor.Submit(t); err != nil {
-		logger.Get().With(
-			zap.Error(err),
-			zap.String("trace_name", t.Name),
-		).Error("Failed to submit trace for processing")
-	}
+	t.handler.endTrace(t)
 }
 
 func (t *Trace) getParentObservationID() string {
@@ -90,15 +82,7 @@ func (t *Trace) StartSpan(name string) *Observation {
 // The observation's start time is set to the current time.
 // Returns an Observation that can be used to add data and end the observation.
 func (t *Trace) StartObservation(name string, typ ObservationType) *Observation {
-	observationID := t.ingestor.idGenerator.GenerateSpanID().String()
-	observation := &Observation{
-		TraceID:             t.ID,
-		ID:                  observationID,
-		Name:                name,
-		Type:                typ,
-		ParentObservationID: t.getParentObservationID(),
-		StartTime:           time.Now(),
-	}
+	observation := t.handler.startObservation(t, name, typ)
 	t.observations = append(t.observations, observation)
 	return observation
 }

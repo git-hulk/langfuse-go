@@ -1,6 +1,7 @@
 package traces
 
 import (
+	"context"
 	"time"
 )
 
@@ -67,9 +68,11 @@ type Observation struct {
 	StatusMessage       string           `json:"statusMessage,omitempty"`
 	ParentObservationID string           `json:"parentObservationId,omitempty"`
 	Environment         string           `json:"environment,omitempty"`
+
+	handler traceHandler
+	otelCtx context.Context
 }
 
 func (o *Observation) End() {
-	now := time.Now()
-	o.EndTime = &now
+	o.handler.endObservation(o)
 }

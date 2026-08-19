@@ -157,7 +157,7 @@ func TestIngestor_StartTrace(t *testing.T) {
 	require.Len(t, trace.ID, 32) // Trace ID should be 32 hex characters
 	require.NotEmpty(t, trace.Timestamp)
 	require.Empty(t, trace.observations)
-	require.Equal(t, ingestor, trace.ingestor)
+	require.Equal(t, ingestor, trace.handler)
 
 	logger.Info("successfully started trace",
 		zap.String("trace_id", trace.ID),

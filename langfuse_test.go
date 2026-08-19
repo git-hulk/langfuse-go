@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/git-hulk/langfuse-go/pkg/traces"
 	"github.com/stretchr/testify/require"
+
+	"github.com/git-hulk/langfuse-go/pkg/traces"
 )
 
 func TestNewClient_WithoutOptions(t *testing.T) {
@@ -15,7 +16,7 @@ func TestNewClient_WithoutOptions(t *testing.T) {
 
 	require.NotNil(t, client)
 	require.NotNil(t, client.restyCli)
-	require.NotNil(t, client.ingestor)
+	require.NotNil(t, client.traceClient)
 	require.NotNil(t, client.prompt)
 	require.NotNil(t, client.model)
 	require.NotNil(t, client.project)
@@ -51,7 +52,7 @@ func TestNewClient_WithHTTPClient(t *testing.T) {
 	require.Equal(t, 30*time.Second, restyHTTPClient.Timeout)
 
 	// Verify that all subclients are properly initialized
-	require.NotNil(t, client.ingestor)
+	require.NotNil(t, client.traceClient)
 	require.NotNil(t, client.prompt)
 	require.NotNil(t, client.model)
 	require.NotNil(t, client.project)
@@ -97,6 +98,35 @@ func TestWithHTTPClient(t *testing.T) {
 func TestClientConfig_Default(t *testing.T) {
 	config := &clientConfig{}
 	require.Nil(t, config.httpClient)
+}
+
+func TestNewClient_WithOTelExport(t *testing.T) {
+	client := NewClient("https://cloud.langfuse.com", "public-key", "secret-key", WithOTelExport())
+
+	require.NotNil(t, client)
+	require.NotNil(t, client.traceClient)
+	require.NotNil(t, client.restyCli)
+
+	// Verify that the trace client is an OtelIngestor
+	_, ok := client.traceClient.(*traces.OtelIngestor)
+	require.True(t, ok, "traceClient should be *traces.OtelIngestor when WithOTelExport is used")
+
+	// Verify all subclients are properly initialized
+	require.NotNil(t, client.prompt)
+	require.NotNil(t, client.model)
+	require.NotNil(t, client.project)
+	require.NotNil(t, client.comment)
+	require.NotNil(t, client.dataset)
+	require.NotNil(t, client.session)
+	require.NotNil(t, client.score)
+	require.NotNil(t, client.llmConnection)
+	require.NotNil(t, client.organization)
+	require.NotNil(t, client.health)
+	require.NotNil(t, client.media)
+	require.NotNil(t, client.metric)
+
+	err := client.Close()
+	require.NoError(t, err)
 }
 
 func TestTrace(t *testing.T) {

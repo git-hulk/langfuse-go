@@ -39,7 +39,7 @@ func TestTrace_StartSpan(t *testing.T) {
 	ingestor := NewIngestor(client)
 
 	trace := &Trace{
-		ingestor: ingestor,
+		handler: ingestor,
 		TraceEntry: TraceEntry{
 			ID:   "test-traces-id",
 			Name: "test-traces",
@@ -76,7 +76,7 @@ func TestTrace_MultipleSpans(t *testing.T) {
 	ingestor := NewIngestor(client)
 
 	trace := &Trace{
-		ingestor: ingestor,
+		handler: ingestor,
 		TraceEntry: TraceEntry{
 			ID:   "test-traces-id",
 			Name: "test-traces",
@@ -137,7 +137,7 @@ func TestTrace_NestedSpans(t *testing.T) {
 	ingestor := NewIngestor(client)
 
 	trace := &Trace{
-		ingestor: ingestor,
+		handler: ingestor,
 		TraceEntry: TraceEntry{
 			ID:   "test-trace-id",
 			Name: "test-trace",
@@ -174,7 +174,7 @@ func TestTrace_NestedSpansWithEndedSpans(t *testing.T) {
 	ingestor := NewIngestor(client)
 
 	trace := &Trace{
-		ingestor: ingestor,
+		handler: ingestor,
 		TraceEntry: TraceEntry{
 			ID:   "test-trace-id",
 			Name: "test-trace",
@@ -214,7 +214,7 @@ func TestTrace_GetParentObservationID(t *testing.T) {
 	ingestor := NewIngestor(client)
 
 	trace := &Trace{
-		ingestor: ingestor,
+		handler: ingestor,
 		TraceEntry: TraceEntry{
 			ID:   "test-trace-id",
 			Name: "test-trace",
@@ -283,7 +283,7 @@ func TestTrace_DeepNestedSpans(t *testing.T) {
 	ingestor := NewIngestor(client)
 
 	trace := &Trace{
-		ingestor: ingestor,
+		handler: ingestor,
 		TraceEntry: TraceEntry{
 			ID:   "test-trace-id",
 			Name: "test-trace",
@@ -325,7 +325,7 @@ func TestTrace_StartObservation(t *testing.T) {
 	ingestor := NewIngestor(client)
 
 	trace := &Trace{
-		ingestor: ingestor,
+		handler: ingestor,
 		TraceEntry: TraceEntry{
 			ID:   "test-trace-id",
 			Name: "test-trace",
@@ -378,7 +378,7 @@ func TestTrace_StartGeneration(t *testing.T) {
 	ingestor := NewIngestor(client)
 
 	trace := &Trace{
-		ingestor: ingestor,
+		handler: ingestor,
 		TraceEntry: TraceEntry{
 			ID:   "test-trace-id",
 			Name: "test-trace",

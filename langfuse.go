@@ -18,6 +18,7 @@ package langfuse
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/go-resty/resty/v2"
@@ -47,7 +48,7 @@ import (
 // The client manages HTTP connections and provides efficient batch processing
 // for trace ingestion with automatic flushing and graceful shutdown capabilities.
 type Langfuse struct {
-	ingestor      *traces.Ingestor
+	traceClient   traceClient
 	prompt        *prompts.Client
 	model         *models.Client
 	project       *projects.Client
@@ -63,12 +64,19 @@ type Langfuse struct {
 	restyCli      *resty.Client
 }
 
+type traceClient interface {
+	StartTrace(ctx context.Context, name string) *traces.Trace
+	Flush()
+	Close() error
+}
+
 // ClientOption is a function that configures a Langfuse client.
 type ClientOption func(*clientConfig)
 
 // clientConfig holds configuration options for the Langfuse client.
 type clientConfig struct {
 	httpClient *http.Client
+	useOTel    bool
 }
 
 // WithHTTPClient sets a custom HTTP client for the Langfuse client.
@@ -89,6 +97,21 @@ type clientConfig struct {
 func WithHTTPClient(httpClient *http.Client) ClientOption {
 	return func(config *clientConfig) {
 		config.httpClient = httpClient
+	}
+}
+
+// WithOTelExport enables OpenTelemetry-based trace export using the OTLP/HTTP protocol.
+//
+// When enabled, traces are sent to Langfuse's OTLP endpoint (/api/public/otel/v1/traces)
+// using the OpenTelemetry Go SDK with a BatchSpanProcessor and otlptracehttp exporter.
+// This replaces the legacy batch ingestion endpoint.
+//
+// Example:
+//
+//	client := langfuse.NewClient("https://cloud.langfuse.com", "public-key", "secret-key", langfuse.WithOTelExport())
+func WithOTelExport() ClientOption {
+	return func(config *clientConfig) {
+		config.useOTel = true
 	}
 }
 
@@ -121,8 +144,19 @@ func NewClient(host string, publicKey string, secretKey string, options ...Clien
 	restyCli.SetBaseURL(host+"/api/public").
 		SetBasicAuth(publicKey, secretKey)
 
+	var tc traceClient
+	if config.useOTel {
+		otelIngestor, err := traces.NewOtelIngestor(host, publicKey, secretKey)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create OTel ingestor: %v", err))
+		}
+		tc = otelIngestor
+	} else {
+		tc = traces.NewIngestor(restyCli)
+	}
+
 	return &Langfuse{
-		ingestor:      traces.NewIngestor(restyCli),
+		traceClient:   tc,
 		prompt:        prompts.NewClient(restyCli),
 		model:         models.NewClient(restyCli),
 		project:       projects.NewClient(restyCli),
@@ -140,7 +174,7 @@ func NewClient(host string, publicKey string, secretKey string, options ...Clien
 }
 
 func (c *Langfuse) Flush() {
-	c.ingestor.Flush()
+	c.traceClient.Flush()
 }
 
 // StartTrace creates a new trace with the given name.
@@ -151,7 +185,7 @@ func (c *Langfuse) Flush() {
 //
 // Returns a Trace instance that you can use to add observations and metadata.
 func (c *Langfuse) StartTrace(ctx context.Context, name string) *traces.Trace {
-	return c.ingestor.StartTrace(ctx, name)
+	return c.traceClient.StartTrace(ctx, name)
 }
 
 // Prompts returns a client for managing prompt templates and versions.
@@ -258,5 +292,5 @@ func (c *Langfuse) Metrics() *metrics.Client {
 //
 // Returns an error if the shutdown process fails or times out.
 func (c *Langfuse) Close() error {
-	return c.ingestor.Close()
+	return c.traceClient.Close()
 }

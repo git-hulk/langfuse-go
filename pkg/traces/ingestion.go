@@ -12,8 +12,10 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofrs/uuid/v5"
+	"go.uber.org/zap"
 
 	"github.com/git-hulk/langfuse-go/pkg/batch"
+	"github.com/git-hulk/langfuse-go/pkg/logger"
 )
 
 const (
@@ -210,26 +212,62 @@ func (ingestor *Ingestor) Send(ctx context.Context, traces []*Trace) error {
 }
 
 func (ingestor *Ingestor) StartTrace(_ context.Context, name string) *Trace {
-	traceID := ingestor.idGenerator.GenerateTraceID().String()
-	return ingestor.withTraceID(traceID, name)
+	return ingestor.startTrace(context.Background(), name)
 }
 
-func (ingestor *Ingestor) withTraceID(id, name string) *Trace {
+func (ingestor *Ingestor) startTrace(_ context.Context, name string) *Trace {
+	traceID := ingestor.idGenerator.GenerateTraceID().String()
 	return &Trace{
-		ingestor:     ingestor,
+		handler:      ingestor,
 		observations: make([]*Observation, 0),
 		TraceEntry: TraceEntry{
-			ID:        id,
+			ID:        traceID,
 			Name:      name,
 			Timestamp: time.Now(),
 		},
 	}
 }
 
-func (ingestor *Ingestor) Flush() {
+func (ingestor *Ingestor) endTrace(t *Trace) {
+	t.Latency = time.Since(t.Timestamp).Milliseconds()
+	if err := ingestor.processor.Submit(t); err != nil {
+		logger.Get().With(
+			zap.Error(err),
+			zap.String("trace_name", t.Name),
+		).Error("Failed to submit trace for processing")
+	}
+}
+
+func (ingestor *Ingestor) startObservation(t *Trace, name string, typ ObservationType) *Observation {
+	observationID := ingestor.idGenerator.GenerateSpanID().String()
+	return &Observation{
+		TraceID:             t.ID,
+		ID:                  observationID,
+		Name:                name,
+		Type:                typ,
+		ParentObservationID: t.getParentObservationID(),
+		StartTime:           time.Now(),
+		handler:             ingestor,
+	}
+}
+
+func (ingestor *Ingestor) endObservation(o *Observation) {
+	now := time.Now()
+	o.EndTime = &now
+}
+
+func (ingestor *Ingestor) flush() {
 	ingestor.processor.Flush()
 }
 
-func (ingestor *Ingestor) Close() error {
+func (ingestor *Ingestor) close() error {
 	return ingestor.processor.Close()
+}
+
+func (ingestor *Ingestor) Flush() {
+	ingestor.flush()
+}
+
+func (ingestor *Ingestor) Close() error {
+	return ingestor.close()
 }
