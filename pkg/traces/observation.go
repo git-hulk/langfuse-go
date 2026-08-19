@@ -2,6 +2,8 @@ package traces
 
 import (
 	"time"
+
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 type ObservationType string
@@ -47,29 +49,28 @@ type Usage struct {
 }
 
 type Observation struct {
-	ID                  string           `json:"id,omitempty"`
-	TraceID             string           `json:"traceId,omitempty"`
+	oteltrace.Span
 	Type                ObservationType  `json:"type"`
 	Name                string           `json:"name,omitempty"`
 	PromptName          string           `json:"promptName,omitempty"`
 	PromptVersion       int              `json:"promptVersion,omitempty"`
-	StartTime           time.Time        `json:"startTime,omitempty"`
-	EndTime             *time.Time       `json:"endTime,omitempty"`
 	CompletionStartTime *time.Time       `json:"completionStartTime,omitempty"`
 	Model               string           `json:"model,omitempty"`
 	ModelParameters     map[string]any   `json:"modelParameters,omitempty"`
 	Input               any              `json:"input,omitempty"`
-	Version             string           `json:"version,omitempty"`
 	Metadata            any              `json:"metadata,omitempty"`
 	Output              any              `json:"output,omitempty"`
 	Usage               Usage            `json:"usage,omitempty"`
 	Level               ObservationLevel `json:"level,omitempty"`
 	StatusMessage       string           `json:"statusMessage,omitempty"`
-	ParentObservationID string           `json:"parentObservationId,omitempty"`
 	Environment         string           `json:"environment,omitempty"`
 }
 
+// End finalizes the observation by exporting the OTel span.
 func (o *Observation) End() {
-	now := time.Now()
-	o.EndTime = &now
+	if o.Span == nil {
+		return
+	}
+	o.SetAttributes(observationAttributes(o)...)
+	o.Span.End()
 }

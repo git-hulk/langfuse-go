@@ -9,8 +9,8 @@
 //	client := langfuse.NewClient("https://cloud.langfuse.com", "your-public-key", "your-secret-key")
 //	defer client.Close()
 //
-//	trace := client.StartTrace("my-application")
-//	span := trace.StartSpan("processing-step")
+//	ctx, trace := client.StartTrace(ctx, "my-application")
+//	ctx, span := trace.StartSpan(ctx, "processing-step")
 //	// ... your application logic
 //	span.End()
 //	trace.End()
@@ -18,11 +18,10 @@ package langfuse
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/go-resty/resty/v2"
-
-	"github.com/git-hulk/langfuse-go/pkg/organizations"
 
 	"github.com/git-hulk/langfuse-go/pkg/comments"
 	"github.com/git-hulk/langfuse-go/pkg/datasets"
@@ -31,6 +30,7 @@ import (
 	"github.com/git-hulk/langfuse-go/pkg/media"
 	"github.com/git-hulk/langfuse-go/pkg/metrics"
 	"github.com/git-hulk/langfuse-go/pkg/models"
+	"github.com/git-hulk/langfuse-go/pkg/organizations"
 	"github.com/git-hulk/langfuse-go/pkg/projects"
 	"github.com/git-hulk/langfuse-go/pkg/prompts"
 	"github.com/git-hulk/langfuse-go/pkg/scores"
@@ -47,7 +47,7 @@ import (
 // The client manages HTTP connections and provides efficient batch processing
 // for trace ingestion with automatic flushing and graceful shutdown capabilities.
 type Langfuse struct {
-	ingestor      *traces.Ingestor
+	ingestor      traceIngestor
 	prompt        *prompts.Client
 	model         *models.Client
 	project       *projects.Client
@@ -61,6 +61,12 @@ type Langfuse struct {
 	media         *media.Client
 	metric        *metrics.Client
 	restyCli      *resty.Client
+}
+
+type traceIngestor interface {
+	StartTrace(ctx context.Context, name string) (context.Context, *traces.Trace)
+	Flush()
+	Close() error
 }
 
 // ClientOption is a function that configures a Langfuse client.
@@ -121,8 +127,13 @@ func NewClient(host string, publicKey string, secretKey string, options ...Clien
 	restyCli.SetBaseURL(host+"/api/public").
 		SetBasicAuth(publicKey, secretKey)
 
+	otelIngestor, err := traces.NewOtelIngestor(host, publicKey, secretKey)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create OTel ingestor: %v", err))
+	}
+
 	return &Langfuse{
-		ingestor:      traces.NewIngestor(restyCli),
+		ingestor:      otelIngestor,
 		prompt:        prompts.NewClient(restyCli),
 		model:         models.NewClient(restyCli),
 		project:       projects.NewClient(restyCli),
@@ -149,8 +160,10 @@ func (c *Langfuse) Flush() {
 // multiple observations (spans). Traces are automatically batched and sent to
 // Langfuse for efficient ingestion.
 //
-// Returns a Trace instance that you can use to add observations and metadata.
-func (c *Langfuse) StartTrace(ctx context.Context, name string) *traces.Trace {
+// Returns the context carrying the trace span and a Trace instance that you can use
+// to add observations and metadata. Pass the returned context to the trace's StartXXX
+// methods so the observations are nested under this trace.
+func (c *Langfuse) StartTrace(ctx context.Context, name string) (context.Context, *traces.Trace) {
 	return c.ingestor.StartTrace(ctx, name)
 }
 

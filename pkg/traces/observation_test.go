@@ -1,25 +1,28 @@
 package traces
 
 import (
+	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 func TestObservation_End(t *testing.T) {
-	startTime := time.Now()
-	observation := &Observation{
-		ID:        "test-observation-id",
-		StartTime: startTime,
-	}
+	ingestor, _ := newTestOtelIngestor(t)
+	defer ingestor.Close()
 
-	time.Sleep(10 * time.Millisecond)
+	ctx, trace := ingestor.StartTrace(context.Background(), "test-trace")
+	spanCtx, observation := trace.StartSpan(ctx, "test-span")
+
+	require.NotNil(t, spanCtx)
+	span := oteltrace.SpanFromContext(spanCtx)
+	assert.True(t, span.IsRecording())
+
 	observation.End()
 
-	require.NotNil(t, observation.EndTime)
-	assert.True(t, observation.EndTime.After(startTime))
+	assert.False(t, span.IsRecording())
 }
 
 func TestObservation_Fields(t *testing.T) {
@@ -31,27 +34,21 @@ func TestObservation_Fields(t *testing.T) {
 	}
 
 	observation := &Observation{
-		ID:                  "obs-123",
-		TraceID:             "traces-456",
-		Type:                ObservationTypeGeneration,
-		Name:                "test-generation",
-		Model:               "gpt-4",
-		ModelParameters:     map[string]any{"temperature": 0.7},
-		PromptName:          "test-prompt",
-		PromptVersion:       1,
-		Input:               "test input",
-		Version:             "1.0",
-		Metadata:            map[string]any{"key": "value"},
-		Output:              "test output",
-		Usage:               *usage,
-		Level:               ObservationLevelDefault,
-		StatusMessage:       "completed",
-		ParentObservationID: "parent-789",
-		Environment:         "test",
+		Type:            ObservationTypeGeneration,
+		Name:            "test-generation",
+		Model:           "gpt-4",
+		ModelParameters: map[string]any{"temperature": 0.7},
+		PromptName:      "test-prompt",
+		PromptVersion:   1,
+		Input:           "test input",
+		Metadata:        map[string]any{"key": "value"},
+		Output:          "test output",
+		Usage:           *usage,
+		Level:           ObservationLevelDefault,
+		StatusMessage:   "completed",
+		Environment:     "test",
 	}
 
-	assert.Equal(t, "obs-123", observation.ID)
-	assert.Equal(t, "traces-456", observation.TraceID)
 	assert.Equal(t, ObservationTypeGeneration, observation.Type)
 	assert.Equal(t, "test-generation", observation.Name)
 	assert.Equal(t, "gpt-4", observation.Model)
@@ -59,13 +56,11 @@ func TestObservation_Fields(t *testing.T) {
 	assert.Equal(t, "test-prompt", observation.PromptName)
 	assert.Equal(t, 1, observation.PromptVersion)
 	assert.Equal(t, "test input", observation.Input)
-	assert.Equal(t, "1.0", observation.Version)
 	assert.Equal(t, map[string]any{"key": "value"}, observation.Metadata)
 	assert.Equal(t, "test output", observation.Output)
 	assert.Equal(t, *usage, observation.Usage)
 	assert.Equal(t, ObservationLevelDefault, observation.Level)
 	assert.Equal(t, "completed", observation.StatusMessage)
-	assert.Equal(t, "parent-789", observation.ParentObservationID)
 	assert.Equal(t, "test", observation.Environment)
 }
 
