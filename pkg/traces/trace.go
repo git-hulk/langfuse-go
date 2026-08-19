@@ -41,9 +41,9 @@ type Trace struct {
 	TraceEntry
 	oteltrace.Span
 
-	tracer       tracer
-	observations []*Observation
-	otelCtx      context.Context
+	tracer          tracer
+	lastObservation *Observation
+	otelCtx         context.Context
 }
 
 // End finalizes the trace by exporting the OTel span with trace attributes.
@@ -56,14 +56,13 @@ func (t *Trace) End() {
 }
 
 func (t *Trace) getParentContext() context.Context {
-	if len(t.observations) == 0 {
+	if t.lastObservation == nil {
 		return t.otelCtx
 	}
-	last := t.observations[len(t.observations)-1]
-	if last.IsRecording() {
-		return last.otelCtx
+	if t.lastObservation.IsRecording() {
+		return t.lastObservation.otelCtx
 	}
-	return last.parentOtelCtx
+	return t.lastObservation.parentOtelCtx
 }
 
 // StartSpan creates a new child observation (span) within this trace.
@@ -90,7 +89,7 @@ func (t *Trace) StartObservation(name string, typ ObservationType) *Observation 
 		otelCtx:       ctx,
 		parentOtelCtx: parentCtx,
 	}
-	t.observations = append(t.observations, observation)
+	t.lastObservation = observation
 	return observation
 }
 

@@ -30,7 +30,7 @@ func TestOtelIngestor_StartTrace(t *testing.T) {
 	assert.NotEmpty(t, trace.ID)
 	assert.Len(t, trace.ID, 32)
 	assert.NotNil(t, trace.otelCtx)
-	assert.Empty(t, trace.observations)
+	assert.Nil(t, trace.lastObservation)
 }
 
 func TestOtelIngestor_TraceUniqueIDs(t *testing.T) {

@@ -67,10 +67,9 @@ func (oi *OtelIngestor) StartTrace(ctx context.Context, name string) *Trace {
 	ctx, span := oi.tracer.Start(ctx, name)
 	sc := span.SpanContext()
 	return &Trace{
-		Span:         span,
-		tracer:       oi.tracer,
-		observations: make([]*Observation, 0),
-		otelCtx:      ctx,
+		Span:    span,
+		tracer:  oi.tracer,
+		otelCtx: ctx,
 		TraceEntry: TraceEntry{
 			ID:   sc.TraceID().String(),
 			Name: name,
