@@ -3,6 +3,8 @@ package traces
 import (
 	"context"
 	"time"
+
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 type ObservationType string
@@ -69,10 +71,17 @@ type Observation struct {
 	ParentObservationID string           `json:"parentObservationId,omitempty"`
 	Environment         string           `json:"environment,omitempty"`
 
-	handler traceHandler
 	otelCtx context.Context
 }
 
+// End finalizes the observation by exporting the OTel span.
 func (o *Observation) End() {
-	o.handler.endObservation(o)
+	now := time.Now()
+	o.EndTime = &now
+	if o.otelCtx == nil {
+		return
+	}
+	span := oteltrace.SpanFromContext(o.otelCtx)
+	span.SetAttributes(observationAttributes(o)...)
+	span.End()
 }

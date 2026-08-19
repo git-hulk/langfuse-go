@@ -8,12 +8,11 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 type OtelIngestor struct {
 	provider *sdktrace.TracerProvider
-	tracer   oteltrace.Tracer
+	tracer   tracer
 }
 
 type OtelIngestorOption func(*otelIngestorConfig)
@@ -57,19 +56,19 @@ func NewOtelIngestor(host, publicKey, secretKey string, opts ...OtelIngestorOpti
 	}
 
 	otel.SetTracerProvider(provider)
-	tracer := provider.Tracer("langfuse-go")
+	t := provider.Tracer("langfuse-go")
 
 	return &OtelIngestor{
 		provider: provider,
-		tracer:   tracer,
+		tracer:   t,
 	}, nil
 }
 
-func (oi *OtelIngestor) startTrace(ctx context.Context, name string) *Trace {
+func (oi *OtelIngestor) StartTrace(ctx context.Context, name string) *Trace {
 	ctx, span := oi.tracer.Start(ctx, name)
 	sc := span.SpanContext()
 	return &Trace{
-		handler:      oi,
+		tracer:       oi.tracer,
 		observations: make([]*Observation, 0),
 		otelCtx:      ctx,
 		TraceEntry: TraceEntry{
@@ -80,80 +79,10 @@ func (oi *OtelIngestor) startTrace(ctx context.Context, name string) *Trace {
 	}
 }
 
-func (oi *OtelIngestor) endTrace(t *Trace) {
-	t.Latency = time.Since(t.Timestamp).Milliseconds()
-	if t.otelCtx == nil {
-		return
-	}
-	span := oteltrace.SpanFromContext(t.otelCtx)
-	span.SetAttributes(traceAttributes(t)...)
-	span.End()
-}
-
-func (oi *OtelIngestor) startObservation(t *Trace, name string, typ ObservationType) *Observation {
-	parentCtx := oi.getParentContext(t)
-	ctx, span := oi.tracer.Start(parentCtx, name)
-	sc := span.SpanContext()
-	return &Observation{
-		TraceID:             t.ID,
-		ID:                  sc.SpanID().String(),
-		Name:                name,
-		Type:                typ,
-		ParentObservationID: t.getParentObservationID(),
-		StartTime:           time.Now(),
-		handler:             oi,
-		otelCtx:             ctx,
-	}
-}
-
-func (oi *OtelIngestor) endObservation(o *Observation) {
-	now := time.Now()
-	o.EndTime = &now
-	if o.otelCtx == nil {
-		return
-	}
-	span := oteltrace.SpanFromContext(o.otelCtx)
-	span.SetAttributes(observationAttributes(o)...)
-	span.End()
-}
-
-func (oi *OtelIngestor) getParentContext(t *Trace) context.Context {
-	if len(t.observations) == 0 {
-		return t.otelCtx
-	}
-	last := t.observations[len(t.observations)-1]
-	if last.EndTime == nil || last.EndTime.IsZero() {
-		return last.otelCtx
-	}
-	return oi.findParentContext(t, last)
-}
-
-func (oi *OtelIngestor) findParentContext(t *Trace, obs *Observation) context.Context {
-	for i := len(t.observations) - 1; i >= 0; i-- {
-		o := t.observations[i]
-		if o.ID == obs.ParentObservationID {
-			return o.otelCtx
-		}
-	}
-	return t.otelCtx
-}
-
-func (oi *OtelIngestor) flush() {
+func (oi *OtelIngestor) Flush() {
 	oi.provider.ForceFlush(context.Background())
 }
 
-func (oi *OtelIngestor) close() error {
-	return oi.provider.Shutdown(context.Background())
-}
-
-func (oi *OtelIngestor) StartTrace(ctx context.Context, name string) *Trace {
-	return oi.startTrace(ctx, name)
-}
-
-func (oi *OtelIngestor) Flush() {
-	oi.flush()
-}
-
 func (oi *OtelIngestor) Close() error {
-	return oi.close()
+	return oi.provider.Shutdown(context.Background())
 }

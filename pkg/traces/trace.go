@@ -8,7 +8,11 @@ package traces
 import (
 	"context"
 	"time"
+
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
+
+type tracer = oteltrace.Tracer
 
 // TraceEntry represents the core data structure for a trace in Langfuse.
 //
@@ -40,30 +44,53 @@ type TraceEntry struct {
 type Trace struct {
 	TraceEntry
 
-	handler      traceHandler
+	tracer       tracer
 	observations []*Observation
 	otelCtx      context.Context
 }
 
-// End finalizes the trace by calculating its latency and submitting it for batch processing.
-//
-// This method calculates the total latency from the trace's start timestamp to now,
-// then submits the trace to the batch processor for efficient ingestion to Langfuse.
-// If submission fails, an error is logged but the method does not return an error.
+// End finalizes the trace by calculating its latency and exporting the OTel span.
 func (t *Trace) End() {
-	t.handler.endTrace(t)
+	t.Latency = time.Since(t.Timestamp).Milliseconds()
+	if t.otelCtx == nil {
+		return
+	}
+	span := oteltrace.SpanFromContext(t.otelCtx)
+	span.SetAttributes(traceAttributes(t)...)
+	span.End()
 }
 
 func (t *Trace) getParentObservationID() string {
 	if len(t.observations) == 0 {
-		return t.ID // If no observations, use trace ID as parent
+		return t.ID
 	}
 
 	lastObservation := t.observations[len(t.observations)-1]
 	if lastObservation.EndTime == nil || lastObservation.EndTime.IsZero() {
-		return lastObservation.ID // Use last observation ID if it's still active
+		return lastObservation.ID
 	}
-	return lastObservation.ParentObservationID // Use parent observation ID of the last observation
+	return lastObservation.ParentObservationID
+}
+
+func (t *Trace) getParentContext() context.Context {
+	if len(t.observations) == 0 {
+		return t.otelCtx
+	}
+	last := t.observations[len(t.observations)-1]
+	if last.EndTime == nil || last.EndTime.IsZero() {
+		return last.otelCtx
+	}
+	return t.findParentContext(last)
+}
+
+func (t *Trace) findParentContext(obs *Observation) context.Context {
+	for i := len(t.observations) - 1; i >= 0; i-- {
+		o := t.observations[i]
+		if o.ID == obs.ParentObservationID {
+			return o.otelCtx
+		}
+	}
+	return t.otelCtx
 }
 
 // StartSpan creates a new child observation (span) within this trace.
@@ -72,8 +99,7 @@ func (t *Trace) getParentObservationID() string {
 // to this trace. The span's start time is set to the current time.
 // Returns an Observation that can be used to add data and end the span.
 func (t *Trace) StartSpan(name string) *Observation {
-	observation := t.StartObservation(name, ObservationTypeSpan)
-	return observation
+	return t.StartObservation(name, ObservationTypeSpan)
 }
 
 // StartObservation creates a new child observation of the specified type within this trace.
@@ -82,7 +108,18 @@ func (t *Trace) StartSpan(name string) *Observation {
 // The observation's start time is set to the current time.
 // Returns an Observation that can be used to add data and end the observation.
 func (t *Trace) StartObservation(name string, typ ObservationType) *Observation {
-	observation := t.handler.startObservation(t, name, typ)
+	parentCtx := t.getParentContext()
+	ctx, span := t.tracer.Start(parentCtx, name)
+	sc := span.SpanContext()
+	observation := &Observation{
+		TraceID:             t.ID,
+		ID:                  sc.SpanID().String(),
+		Name:                name,
+		Type:                typ,
+		ParentObservationID: t.getParentObservationID(),
+		StartTime:           time.Now(),
+		otelCtx:             ctx,
+	}
 	t.observations = append(t.observations, observation)
 	return observation
 }
@@ -93,6 +130,5 @@ func (t *Trace) StartObservation(name string, typ ObservationType) *Observation 
 // to this trace. The generation's start time is set to the current time.
 // Returns an Observation that can be used to add data and end the generation.
 func (t *Trace) StartGeneration(name string) *Observation {
-	observation := t.StartObservation(name, ObservationTypeGeneration)
-	return observation
+	return t.StartObservation(name, ObservationTypeGeneration)
 }
