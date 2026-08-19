@@ -39,6 +39,7 @@ type TraceEntry struct {
 // Traces are automatically assigned unique IDs when created.
 type Trace struct {
 	TraceEntry
+	oteltrace.Span
 
 	tracer       tracer
 	observations []*Observation
@@ -47,12 +48,11 @@ type Trace struct {
 
 // End finalizes the trace by exporting the OTel span with trace attributes.
 func (t *Trace) End() {
-	if t.otelCtx == nil {
+	if t.Span == nil {
 		return
 	}
-	span := oteltrace.SpanFromContext(t.otelCtx)
-	span.SetAttributes(traceAttributes(t)...)
-	span.End()
+	t.SetAttributes(traceAttributes(t)...)
+	t.Span.End()
 }
 
 func (t *Trace) getParentContext() context.Context {
@@ -60,8 +60,7 @@ func (t *Trace) getParentContext() context.Context {
 		return t.otelCtx
 	}
 	last := t.observations[len(t.observations)-1]
-	span := oteltrace.SpanFromContext(last.otelCtx)
-	if span.IsRecording() {
+	if last.IsRecording() {
 		return last.otelCtx
 	}
 	return last.parentOtelCtx
@@ -84,9 +83,8 @@ func (t *Trace) StartSpan(name string) *Observation {
 func (t *Trace) StartObservation(name string, typ ObservationType) *Observation {
 	parentCtx := t.getParentContext()
 	ctx, span := t.tracer.Start(parentCtx, name)
-	sc := span.SpanContext()
 	observation := &Observation{
-		ID:            sc.SpanID().String(),
+		Span:          span,
 		Name:          name,
 		Type:          typ,
 		otelCtx:       ctx,

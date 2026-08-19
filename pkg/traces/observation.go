@@ -50,7 +50,7 @@ type Usage struct {
 }
 
 type Observation struct {
-	ID                  string           `json:"id,omitempty"`
+	oteltrace.Span
 	Type                ObservationType  `json:"type"`
 	Name                string           `json:"name,omitempty"`
 	PromptName          string           `json:"promptName,omitempty"`
@@ -72,10 +72,9 @@ type Observation struct {
 
 // End finalizes the observation by exporting the OTel span.
 func (o *Observation) End() {
-	if o.otelCtx == nil {
+	if o.Span == nil {
 		return
 	}
-	span := oteltrace.SpanFromContext(o.otelCtx)
-	span.SetAttributes(observationAttributes(o)...)
-	span.End()
+	o.SetAttributes(observationAttributes(o)...)
+	o.Span.End()
 }

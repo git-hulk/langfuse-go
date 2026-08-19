@@ -120,7 +120,7 @@ func runLLMGenerationTests(client *langfuse.Langfuse) {
 	client.Flush()
 
 	fmt.Printf("Created generation observation %s for trace %s using model %s\n",
-		generation.ID, trace.ID, generation.Model)
+		generation.SpanContext().SpanID().String(), trace.ID, generation.Model)
 	fmt.Printf("Prompt metadata: %s (version %d)\n", generation.PromptName, generation.PromptVersion)
 	fmt.Printf("Token usage - input: %d, output: %d, total: %d (%s)\n",
 		generation.Usage.Input, generation.Usage.Output, generation.Usage.Total, generation.Usage.Unit)
@@ -1225,7 +1225,7 @@ func runMediaTests(client *langfuse.Langfuse) {
 
 	testObservationReq := &media.GetUploadURLRequest{
 		TraceID:       trace.ID,
-		ObservationID: span.ID,
+		ObservationID: span.SpanContext().SpanID().String(),
 		ContentType:   media.ContentTypeTextPlain,
 		ContentLength: observationContentLength,
 		SHA256Hash:    observationContentHash,

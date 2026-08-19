@@ -34,7 +34,6 @@ func TestObservation_Fields(t *testing.T) {
 	}
 
 	observation := &Observation{
-		ID:              "obs-123",
 		Type:            ObservationTypeGeneration,
 		Name:            "test-generation",
 		Model:           "gpt-4",
@@ -50,7 +49,6 @@ func TestObservation_Fields(t *testing.T) {
 		Environment:     "test",
 	}
 
-	assert.Equal(t, "obs-123", observation.ID)
 	assert.Equal(t, ObservationTypeGeneration, observation.Type)
 	assert.Equal(t, "test-generation", observation.Name)
 	assert.Equal(t, "gpt-4", observation.Model)

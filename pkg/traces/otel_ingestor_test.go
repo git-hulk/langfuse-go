@@ -87,8 +87,9 @@ func TestOtelIngestor_StartObservation(t *testing.T) {
 	require.NotNil(t, obs)
 	assert.Equal(t, "my-agent", obs.Name)
 	assert.Equal(t, ObservationTypeAgent, obs.Type)
-	assert.NotEmpty(t, obs.ID)
-	assert.Len(t, obs.ID, 16)
+	obsID := obs.SpanContext().SpanID().String()
+	assert.NotEmpty(t, obsID)
+	assert.Len(t, obsID, 16)
 	assert.NotNil(t, obs.otelCtx)
 }
 
