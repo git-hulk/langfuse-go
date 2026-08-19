@@ -13,6 +13,7 @@ import (
 
 func TestNewClient_WithoutOptions(t *testing.T) {
 	client := NewClient("https://cloud.langfuse.com", "public-key", "secret-key")
+	defer client.Close()
 
 	require.NotNil(t, client)
 	require.NotNil(t, client.restyCli)
@@ -42,6 +43,7 @@ func TestNewClient_WithHTTPClient(t *testing.T) {
 	}
 
 	client := NewClient("https://cloud.langfuse.com", "public-key", "secret-key", WithHTTPClient(customHTTPClient))
+	defer client.Close()
 
 	require.NotNil(t, client)
 	require.NotNil(t, client.restyCli)
@@ -74,6 +76,7 @@ func TestNewClient_WithMultipleOptions(t *testing.T) {
 	}
 
 	client := NewClient("https://cloud.langfuse.com", "public-key", "secret-key", WithHTTPClient(customHTTPClient))
+	defer client.Close()
 
 	require.NotNil(t, client)
 
@@ -100,38 +103,9 @@ func TestClientConfig_Default(t *testing.T) {
 	require.Nil(t, config.httpClient)
 }
 
-func TestNewClient_WithOTelExport(t *testing.T) {
-	client := NewClient("https://cloud.langfuse.com", "public-key", "secret-key", WithOTelExport())
-
-	require.NotNil(t, client)
-	require.NotNil(t, client.traceClient)
-	require.NotNil(t, client.restyCli)
-
-	// Verify that the trace client is an OtelIngestor
-	_, ok := client.traceClient.(*traces.OtelIngestor)
-	require.True(t, ok, "traceClient should be *traces.OtelIngestor when WithOTelExport is used")
-
-	// Verify all subclients are properly initialized
-	require.NotNil(t, client.prompt)
-	require.NotNil(t, client.model)
-	require.NotNil(t, client.project)
-	require.NotNil(t, client.comment)
-	require.NotNil(t, client.dataset)
-	require.NotNil(t, client.session)
-	require.NotNil(t, client.score)
-	require.NotNil(t, client.llmConnection)
-	require.NotNil(t, client.organization)
-	require.NotNil(t, client.health)
-	require.NotNil(t, client.media)
-	require.NotNil(t, client.metric)
-
-	err := client.Close()
-	require.NoError(t, err)
-}
-
 func TestTrace(t *testing.T) {
-	// Use test environment configuration instead of real environment sensitive information
 	client := NewClient("http://localhost:3000", "test-public-key", "test-secret-key")
+	defer client.Close()
 
 	// Create a trace
 	trace := client.StartTrace(context.Background(), "Test Trace")
@@ -187,19 +161,16 @@ func TestTrace(t *testing.T) {
 	require.Equal(t, []string{"test", "example"}, trace.Tags, "Trace tags should match")
 
 	// Verify each observation type was created with correct parameters
-	// Agent observation
 	require.Equal(t, "test_agent", agent.Name, "Agent name should match")
 	require.Equal(t, traces.ObservationTypeAgent, agent.Type, "Agent type should be AGENT")
 	require.Equal(t, map[string]string{"input": "Test agent input"}, agent.Input, "Agent input should match")
 	require.Equal(t, map[string]string{"output": "Test agent output"}, agent.Output, "Agent output should match")
 
-	// Retriever observation
 	require.Equal(t, "test_retriever", retriever.Name, "Retriever name should match")
 	require.Equal(t, traces.ObservationTypeRetriever, retriever.Type, "Retriever type should be RETRIEVER")
 	require.Equal(t, map[string]string{"input": "Test retriever input"}, retriever.Input, "Retriever input should match")
 	require.Equal(t, map[string]string{"output": "Test retriever output"}, retriever.Output, "Retriever output should match")
 
-	// Generation observation
 	require.Equal(t, "test_generation", llm.Name, "Generation name should match")
 	require.Equal(t, traces.ObservationTypeGeneration, llm.Type, "Generation type should be GENERATION")
 	require.Equal(t, map[string]string{"input": "Test generation input"}, llm.Input, "Generation input should match")
@@ -209,7 +180,6 @@ func TestTrace(t *testing.T) {
 	require.Equal(t, 30, llm.Usage.Total, "Generation total usage should match")
 	require.Equal(t, traces.UnitTokens, llm.Usage.Unit, "Generation usage unit should match")
 
-	// Tool observation
 	require.Equal(t, "test_tool", tool.Name, "Tool name should match")
 	require.Equal(t, traces.ObservationTypeTool, tool.Type, "Tool type should be TOOL")
 	require.Equal(t, map[string]string{"input": "Test tool input"}, tool.Input, "Tool input should match")

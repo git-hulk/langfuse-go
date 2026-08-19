@@ -1,37 +1,24 @@
 package traces
 
 import (
-	"net/http"
-	"net/http/httptest"
+	"context"
 	"testing"
-	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestObservation_End(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
+	ingestor, _ := newTestOtelIngestor(t)
+	defer ingestor.Close()
 
-	client := resty.New().SetBaseURL(server.URL)
-	ingestor := NewIngestor(client)
+	trace := ingestor.StartTrace(context.Background(), "test-trace")
+	observation := trace.StartSpan("test-span")
 
-	startTime := time.Now()
-	observation := &Observation{
-		ID:        "test-observation-id",
-		StartTime: startTime,
-		handler:   ingestor,
-	}
-
-	time.Sleep(10 * time.Millisecond)
 	observation.End()
 
 	require.NotNil(t, observation.EndTime)
-	assert.True(t, observation.EndTime.After(startTime))
+	assert.True(t, observation.EndTime.After(observation.StartTime) || observation.EndTime.Equal(observation.StartTime))
 }
 
 func TestObservation_Fields(t *testing.T) {
