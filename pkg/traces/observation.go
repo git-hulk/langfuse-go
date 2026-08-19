@@ -51,18 +51,14 @@ type Usage struct {
 
 type Observation struct {
 	ID                  string           `json:"id,omitempty"`
-	TraceID             string           `json:"traceId,omitempty"`
 	Type                ObservationType  `json:"type"`
 	Name                string           `json:"name,omitempty"`
 	PromptName          string           `json:"promptName,omitempty"`
 	PromptVersion       int              `json:"promptVersion,omitempty"`
-	StartTime           time.Time        `json:"startTime,omitempty"`
-	EndTime             *time.Time       `json:"endTime,omitempty"`
 	CompletionStartTime *time.Time       `json:"completionStartTime,omitempty"`
 	Model               string           `json:"model,omitempty"`
 	ModelParameters     map[string]any   `json:"modelParameters,omitempty"`
 	Input               any              `json:"input,omitempty"`
-	Version             string           `json:"version,omitempty"`
 	Metadata            any              `json:"metadata,omitempty"`
 	Output              any              `json:"output,omitempty"`
 	Usage               Usage            `json:"usage,omitempty"`
@@ -76,8 +72,6 @@ type Observation struct {
 
 // End finalizes the observation by exporting the OTel span.
 func (o *Observation) End() {
-	now := time.Now()
-	o.EndTime = &now
 	if o.otelCtx == nil {
 		return
 	}

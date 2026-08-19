@@ -133,12 +133,7 @@ func runLLMGenerationTests(client *langfuse.Langfuse) {
 	}
 
 	if generation.CompletionStartTime != nil {
-		fmt.Printf("Completion started %s after generation start", generation.CompletionStartTime.Sub(generation.StartTime))
-		if generation.EndTime != nil {
-			fmt.Printf(" and finished %s later\n", generation.EndTime.Sub(*generation.CompletionStartTime))
-		} else {
-			fmt.Println(" but end time was not set")
-		}
+		fmt.Printf("Completion start time was set\n")
 	} else {
 		fmt.Println("Completion start time not set")
 	}

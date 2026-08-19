@@ -3,7 +3,6 @@ package traces
 import (
 	"context"
 	"encoding/base64"
-	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -72,9 +71,8 @@ func (oi *OtelIngestor) StartTrace(ctx context.Context, name string) *Trace {
 		observations: make([]*Observation, 0),
 		otelCtx:      ctx,
 		TraceEntry: TraceEntry{
-			ID:        sc.TraceID().String(),
-			Name:      name,
-			Timestamp: time.Now(),
+			ID:   sc.TraceID().String(),
+			Name: name,
 		},
 	}
 }

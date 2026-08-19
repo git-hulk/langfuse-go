@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 func TestObservation_End(t *testing.T) {
@@ -15,10 +16,13 @@ func TestObservation_End(t *testing.T) {
 	trace := ingestor.StartTrace(context.Background(), "test-trace")
 	observation := trace.StartSpan("test-span")
 
+	require.NotNil(t, observation.otelCtx)
+	span := oteltrace.SpanFromContext(observation.otelCtx)
+	assert.True(t, span.IsRecording())
+
 	observation.End()
 
-	require.NotNil(t, observation.EndTime)
-	assert.True(t, observation.EndTime.After(observation.StartTime) || observation.EndTime.Equal(observation.StartTime))
+	assert.False(t, span.IsRecording())
 }
 
 func TestObservation_Fields(t *testing.T) {
@@ -31,7 +35,6 @@ func TestObservation_Fields(t *testing.T) {
 
 	observation := &Observation{
 		ID:              "obs-123",
-		TraceID:         "traces-456",
 		Type:            ObservationTypeGeneration,
 		Name:            "test-generation",
 		Model:           "gpt-4",
@@ -39,7 +42,6 @@ func TestObservation_Fields(t *testing.T) {
 		PromptName:      "test-prompt",
 		PromptVersion:   1,
 		Input:           "test input",
-		Version:         "1.0",
 		Metadata:        map[string]any{"key": "value"},
 		Output:          "test output",
 		Usage:           *usage,
@@ -49,7 +51,6 @@ func TestObservation_Fields(t *testing.T) {
 	}
 
 	assert.Equal(t, "obs-123", observation.ID)
-	assert.Equal(t, "traces-456", observation.TraceID)
 	assert.Equal(t, ObservationTypeGeneration, observation.Type)
 	assert.Equal(t, "test-generation", observation.Name)
 	assert.Equal(t, "gpt-4", observation.Model)
@@ -57,7 +58,6 @@ func TestObservation_Fields(t *testing.T) {
 	assert.Equal(t, "test-prompt", observation.PromptName)
 	assert.Equal(t, 1, observation.PromptVersion)
 	assert.Equal(t, "test input", observation.Input)
-	assert.Equal(t, "1.0", observation.Version)
 	assert.Equal(t, map[string]any{"key": "value"}, observation.Metadata)
 	assert.Equal(t, "test output", observation.Output)
 	assert.Equal(t, *usage, observation.Usage)
