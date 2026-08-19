@@ -17,7 +17,7 @@ func TestNewClient_WithoutOptions(t *testing.T) {
 
 	require.NotNil(t, client)
 	require.NotNil(t, client.restyCli)
-	require.NotNil(t, client.traceClient)
+	require.NotNil(t, client.ingestor)
 	require.NotNil(t, client.prompt)
 	require.NotNil(t, client.model)
 	require.NotNil(t, client.project)
@@ -54,7 +54,7 @@ func TestNewClient_WithHTTPClient(t *testing.T) {
 	require.Equal(t, 30*time.Second, restyHTTPClient.Timeout)
 
 	// Verify that all subclients are properly initialized
-	require.NotNil(t, client.traceClient)
+	require.NotNil(t, client.ingestor)
 	require.NotNil(t, client.prompt)
 	require.NotNil(t, client.model)
 	require.NotNil(t, client.project)

@@ -47,7 +47,7 @@ import (
 // The client manages HTTP connections and provides efficient batch processing
 // for trace ingestion with automatic flushing and graceful shutdown capabilities.
 type Langfuse struct {
-	traceClient   traceClient
+	ingestor      traceIngestor
 	prompt        *prompts.Client
 	model         *models.Client
 	project       *projects.Client
@@ -63,7 +63,7 @@ type Langfuse struct {
 	restyCli      *resty.Client
 }
 
-type traceClient interface {
+type traceIngestor interface {
 	StartTrace(ctx context.Context, name string) *traces.Trace
 	Flush()
 	Close() error
@@ -133,7 +133,7 @@ func NewClient(host string, publicKey string, secretKey string, options ...Clien
 	}
 
 	return &Langfuse{
-		traceClient:   otelIngestor,
+		ingestor:      otelIngestor,
 		prompt:        prompts.NewClient(restyCli),
 		model:         models.NewClient(restyCli),
 		project:       projects.NewClient(restyCli),
@@ -151,7 +151,7 @@ func NewClient(host string, publicKey string, secretKey string, options ...Clien
 }
 
 func (c *Langfuse) Flush() {
-	c.traceClient.Flush()
+	c.ingestor.Flush()
 }
 
 // StartTrace creates a new trace with the given name.
@@ -162,7 +162,7 @@ func (c *Langfuse) Flush() {
 //
 // Returns a Trace instance that you can use to add observations and metadata.
 func (c *Langfuse) StartTrace(ctx context.Context, name string) *traces.Trace {
-	return c.traceClient.StartTrace(ctx, name)
+	return c.ingestor.StartTrace(ctx, name)
 }
 
 // Prompts returns a client for managing prompt templates and versions.
@@ -269,5 +269,5 @@ func (c *Langfuse) Metrics() *metrics.Client {
 //
 // Returns an error if the shutdown process fails or times out.
 func (c *Langfuse) Close() error {
-	return c.traceClient.Close()
+	return c.ingestor.Close()
 }
