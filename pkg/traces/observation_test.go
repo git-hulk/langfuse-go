@@ -30,23 +30,22 @@ func TestObservation_Fields(t *testing.T) {
 	}
 
 	observation := &Observation{
-		ID:                  "obs-123",
-		TraceID:             "traces-456",
-		Type:                ObservationTypeGeneration,
-		Name:                "test-generation",
-		Model:               "gpt-4",
-		ModelParameters:     map[string]any{"temperature": 0.7},
-		PromptName:          "test-prompt",
-		PromptVersion:       1,
-		Input:               "test input",
-		Version:             "1.0",
-		Metadata:            map[string]any{"key": "value"},
-		Output:              "test output",
-		Usage:               *usage,
-		Level:               ObservationLevelDefault,
-		StatusMessage:       "completed",
-		ParentObservationID: "parent-789",
-		Environment:         "test",
+		ID:              "obs-123",
+		TraceID:         "traces-456",
+		Type:            ObservationTypeGeneration,
+		Name:            "test-generation",
+		Model:           "gpt-4",
+		ModelParameters: map[string]any{"temperature": 0.7},
+		PromptName:      "test-prompt",
+		PromptVersion:   1,
+		Input:           "test input",
+		Version:         "1.0",
+		Metadata:        map[string]any{"key": "value"},
+		Output:          "test output",
+		Usage:           *usage,
+		Level:           ObservationLevelDefault,
+		StatusMessage:   "completed",
+		Environment:     "test",
 	}
 
 	assert.Equal(t, "obs-123", observation.ID)
@@ -64,7 +63,6 @@ func TestObservation_Fields(t *testing.T) {
 	assert.Equal(t, *usage, observation.Usage)
 	assert.Equal(t, ObservationLevelDefault, observation.Level)
 	assert.Equal(t, "completed", observation.StatusMessage)
-	assert.Equal(t, "parent-789", observation.ParentObservationID)
 	assert.Equal(t, "test", observation.Environment)
 }
 

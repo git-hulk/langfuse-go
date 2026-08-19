@@ -100,10 +100,7 @@ func TestOtelIngestor_ObservationParentChild(t *testing.T) {
 	trace := ingestor.StartTrace(context.Background(), "trace")
 
 	span1 := trace.StartSpan("span-1")
-	assert.Equal(t, trace.ID, span1.ParentObservationID)
-
 	span2 := trace.StartSpan("span-2")
-	assert.Equal(t, span1.ID, span2.ParentObservationID)
 
 	span2.End()
 	span1.End()
@@ -112,17 +109,16 @@ func TestOtelIngestor_ObservationParentChild(t *testing.T) {
 	spans := exporter.GetSpans()
 	require.Len(t, spans, 3)
 
-	spanNames := make(map[string]bool)
+	spanByName := make(map[string]tracetest.SpanStub)
 	for _, s := range spans {
-		spanNames[s.Name] = true
+		spanByName[s.Name] = s
 	}
-	assert.True(t, spanNames["span-1"])
-	assert.True(t, spanNames["span-2"])
-	assert.True(t, spanNames["trace"])
+	assert.Equal(t, spanByName["trace"].SpanContext.SpanID(), spanByName["span-1"].Parent.SpanID())
+	assert.Equal(t, spanByName["span-1"].SpanContext.SpanID(), spanByName["span-2"].Parent.SpanID())
 }
 
 func TestOtelIngestor_EndedSpanParenting(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+	ingestor, exporter := newTestOtelIngestor(t)
 	defer ingestor.Close()
 
 	trace := ingestor.StartTrace(context.Background(), "trace")
@@ -132,11 +128,18 @@ func TestOtelIngestor_EndedSpanParenting(t *testing.T) {
 	child.End()
 
 	sibling := trace.StartSpan("sibling")
-	assert.Equal(t, parent.ID, sibling.ParentObservationID)
-
 	sibling.End()
 	parent.End()
 	trace.End()
+
+	spans := exporter.GetSpans()
+	require.Len(t, spans, 4)
+
+	spanByName := make(map[string]tracetest.SpanStub)
+	for _, s := range spans {
+		spanByName[s.Name] = s
+	}
+	assert.Equal(t, spanByName["parent"].SpanContext.SpanID(), spanByName["sibling"].Parent.SpanID())
 }
 
 func TestOtelIngestor_Generation(t *testing.T) {
@@ -197,10 +200,6 @@ func TestOtelIngestor_DeepNesting(t *testing.T) {
 	l1 := trace.StartSpan("level-1")
 	l2 := trace.StartSpan("level-2")
 	l3 := trace.StartSpan("level-3")
-
-	assert.Equal(t, trace.ID, l1.ParentObservationID)
-	assert.Equal(t, l1.ID, l2.ParentObservationID)
-	assert.Equal(t, l2.ID, l3.ParentObservationID)
 
 	l3.End()
 	l2.End()

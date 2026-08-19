@@ -60,18 +60,6 @@ func (t *Trace) End() {
 	span.End()
 }
 
-func (t *Trace) getParentObservationID() string {
-	if len(t.observations) == 0 {
-		return t.ID
-	}
-
-	lastObservation := t.observations[len(t.observations)-1]
-	if lastObservation.EndTime == nil || lastObservation.EndTime.IsZero() {
-		return lastObservation.ID
-	}
-	return lastObservation.ParentObservationID
-}
-
 func (t *Trace) getParentContext() context.Context {
 	if len(t.observations) == 0 {
 		return t.otelCtx
@@ -80,17 +68,7 @@ func (t *Trace) getParentContext() context.Context {
 	if last.EndTime == nil || last.EndTime.IsZero() {
 		return last.otelCtx
 	}
-	return t.findParentContext(last)
-}
-
-func (t *Trace) findParentContext(obs *Observation) context.Context {
-	for i := len(t.observations) - 1; i >= 0; i-- {
-		o := t.observations[i]
-		if o.ID == obs.ParentObservationID {
-			return o.otelCtx
-		}
-	}
-	return t.otelCtx
+	return last.parentOtelCtx
 }
 
 // StartSpan creates a new child observation (span) within this trace.
@@ -112,13 +90,13 @@ func (t *Trace) StartObservation(name string, typ ObservationType) *Observation 
 	ctx, span := t.tracer.Start(parentCtx, name)
 	sc := span.SpanContext()
 	observation := &Observation{
-		TraceID:             t.ID,
-		ID:                  sc.SpanID().String(),
-		Name:                name,
-		Type:                typ,
-		ParentObservationID: t.getParentObservationID(),
-		StartTime:           time.Now(),
-		otelCtx:             ctx,
+		TraceID:       t.ID,
+		ID:            sc.SpanID().String(),
+		Name:          name,
+		Type:          typ,
+		StartTime:     time.Now(),
+		otelCtx:       ctx,
+		parentOtelCtx: parentCtx,
 	}
 	t.observations = append(t.observations, observation)
 	return observation

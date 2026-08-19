@@ -68,10 +68,10 @@ type Observation struct {
 	Usage               Usage            `json:"usage,omitempty"`
 	Level               ObservationLevel `json:"level,omitempty"`
 	StatusMessage       string           `json:"statusMessage,omitempty"`
-	ParentObservationID string           `json:"parentObservationId,omitempty"`
 	Environment         string           `json:"environment,omitempty"`
 
-	otelCtx context.Context
+	otelCtx       context.Context
+	parentOtelCtx context.Context
 }
 
 // End finalizes the observation by exporting the OTel span.

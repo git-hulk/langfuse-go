@@ -38,7 +38,6 @@ func TestTrace_StartSpan(t *testing.T) {
 	assert.Equal(t, "test-span", span.Name)
 	assert.Equal(t, ObservationTypeSpan, span.Type)
 	assert.Equal(t, trace.ID, span.TraceID)
-	assert.Equal(t, trace.ID, span.ParentObservationID)
 	assert.NotEmpty(t, span.ID)
 	assert.False(t, span.StartTime.IsZero())
 
@@ -62,9 +61,6 @@ func TestTrace_MultipleSpans(t *testing.T) {
 	assert.Equal(t, "span-1", span1.Name)
 	assert.Equal(t, "span-2", span2.Name)
 	assert.NotEqual(t, span1.ID, span2.ID)
-
-	assert.Equal(t, trace.ID, span1.ParentObservationID)
-	assert.Equal(t, span1.ID, span2.ParentObservationID)
 }
 
 func TestTrace_Fields(t *testing.T) {
@@ -102,13 +98,8 @@ func TestTrace_NestedSpans(t *testing.T) {
 	trace := ingestor.StartTrace(context.Background(), "test-trace")
 
 	parentSpan := trace.StartSpan("parent-span")
-	assert.Equal(t, trace.ID, parentSpan.ParentObservationID)
-
 	childSpan := trace.StartSpan("child-span")
-	assert.Equal(t, parentSpan.ID, childSpan.ParentObservationID)
-
 	childSpan2 := trace.StartSpan("child-span-2")
-	assert.Equal(t, childSpan.ID, childSpan2.ParentObservationID)
 
 	assert.Len(t, trace.observations, 3)
 	assert.NotEqual(t, parentSpan.ID, childSpan.ID)
@@ -122,47 +113,16 @@ func TestTrace_NestedSpansWithEndedSpans(t *testing.T) {
 
 	trace := ingestor.StartTrace(context.Background(), "test-trace")
 
-	parentSpan := trace.StartSpan("parent-span")
-	assert.Equal(t, trace.ID, parentSpan.ParentObservationID)
+	trace.StartSpan("parent-span")
 
 	childSpan := trace.StartSpan("child-span")
-	assert.Equal(t, parentSpan.ID, childSpan.ParentObservationID)
-
 	childSpan.End()
 	require.NotNil(t, childSpan.EndTime)
 	assert.False(t, childSpan.EndTime.IsZero())
 
-	siblingSpan := trace.StartSpan("sibling-span")
-	assert.Equal(t, parentSpan.ID, siblingSpan.ParentObservationID)
+	trace.StartSpan("sibling-span")
 
 	assert.Len(t, trace.observations, 3)
-}
-
-func TestTrace_GetParentObservationID(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
-	defer ingestor.Close()
-
-	t.Run("no observations - returns trace ID", func(t *testing.T) {
-		trace := ingestor.StartTrace(context.Background(), "test-trace")
-		result := trace.getParentObservationID()
-		assert.Equal(t, trace.ID, result)
-	})
-
-	t.Run("active observation - returns observation ID", func(t *testing.T) {
-		trace := ingestor.StartTrace(context.Background(), "test-trace")
-		span := trace.StartSpan("active-span")
-		result := trace.getParentObservationID()
-		assert.Equal(t, span.ID, result)
-	})
-
-	t.Run("ended observation - returns parent observation ID", func(t *testing.T) {
-		trace := ingestor.StartTrace(context.Background(), "test-trace")
-		span := trace.StartSpan("ended-span")
-		parentID := span.ParentObservationID
-		span.End()
-		result := trace.getParentObservationID()
-		assert.Equal(t, parentID, result)
-	})
 }
 
 func TestTrace_DeepNestedSpans(t *testing.T) {
@@ -172,21 +132,14 @@ func TestTrace_DeepNestedSpans(t *testing.T) {
 	trace := ingestor.StartTrace(context.Background(), "test-trace")
 
 	level1 := trace.StartSpan("level-1")
-	assert.Equal(t, trace.ID, level1.ParentObservationID)
-
 	level2 := trace.StartSpan("level-2")
-	assert.Equal(t, level1.ID, level2.ParentObservationID)
-
 	level3 := trace.StartSpan("level-3")
-	assert.Equal(t, level2.ID, level3.ParentObservationID)
-
 	level4 := trace.StartSpan("level-4")
-	assert.Equal(t, level3.ID, level4.ParentObservationID)
 
 	assert.Len(t, trace.observations, 4)
 
 	spanIDs := make(map[string]bool)
-	for _, obs := range trace.observations {
+	for _, obs := range []*Observation{level1, level2, level3, level4} {
 		assert.False(t, spanIDs[obs.ID], "Found duplicate span ID: %s", obs.ID)
 		spanIDs[obs.ID] = true
 	}
@@ -204,7 +157,6 @@ func TestTrace_StartObservation(t *testing.T) {
 	assert.Equal(t, "test-observation", observation.Name)
 	assert.Equal(t, ObservationTypeAgent, observation.Type)
 	assert.Equal(t, trace.ID, observation.TraceID)
-	assert.Equal(t, trace.ID, observation.ParentObservationID)
 	assert.NotEmpty(t, observation.ID)
 	assert.False(t, observation.StartTime.IsZero())
 	assert.Nil(t, observation.EndTime)
@@ -218,7 +170,6 @@ func TestTrace_StartObservation(t *testing.T) {
 	assert.Equal(t, "test-observation-2", observation2.Name)
 	assert.Equal(t, ObservationTypeTool, observation2.Type)
 	assert.Equal(t, trace.ID, observation2.TraceID)
-	assert.Equal(t, observation.ID, observation2.ParentObservationID)
 	assert.NotEqual(t, observation.ID, observation2.ID)
 
 	assert.Len(t, trace.observations, 2)
@@ -238,7 +189,6 @@ func TestTrace_StartGeneration(t *testing.T) {
 	assert.Equal(t, "test-generation", generation.Name)
 	assert.Equal(t, ObservationTypeGeneration, generation.Type)
 	assert.Equal(t, trace.ID, generation.TraceID)
-	assert.Equal(t, trace.ID, generation.ParentObservationID)
 	assert.NotEmpty(t, generation.ID)
 	assert.False(t, generation.StartTime.IsZero())
 	assert.Nil(t, generation.EndTime)
