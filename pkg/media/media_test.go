@@ -45,7 +45,20 @@ func TestGetMediaUploadURLRequest_validate(t *testing.T) {
 				Field:         "input",
 			},
 			true,
-			"'traceId' is required",
+			"exactly one media context is required",
+		},
+		{
+			"valid dataset item request",
+			GetUploadURLRequest{
+				DatasetID:     "dataset-123",
+				DatasetItemID: "item-123",
+				ContentType:   ContentTypeImagePNG,
+				ContentLength: 1024,
+				SHA256Hash:    "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+				Field:         "expectedOutput",
+			},
+			false,
+			"",
 		},
 		{
 			"missing content type",
@@ -232,7 +245,7 @@ func TestClient_GetUploadURL_ValidationError(t *testing.T) {
 
 	_, err := client.GetUploadURL(context.Background(), request)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "'traceId' is required")
+	require.Contains(t, err.Error(), "exactly one media context is required")
 }
 
 func TestClient_Get(t *testing.T) {
@@ -353,7 +366,19 @@ func TestUploadFromBytesRequest_validate(t *testing.T) {
 				Data:        []byte("test data"),
 			},
 			true,
-			"'traceId' is required",
+			"exactly one media context is required",
+		},
+		{
+			"valid dataset item request",
+			UploadFromBytesRequest{
+				DatasetID:     "dataset-123",
+				DatasetItemID: "item-123",
+				ContentType:   ContentTypeImagePNG,
+				Field:         "expectedOutput",
+				Data:          []byte("test data"),
+			},
+			false,
+			"",
 		},
 		{
 			"missing content type",
@@ -437,7 +462,19 @@ func TestUploadFileRequest_validate(t *testing.T) {
 				FilePath:    "/path/to/file.png",
 			},
 			true,
-			"'traceId' is required",
+			"exactly one media context is required",
+		},
+		{
+			"valid dataset item request",
+			UploadFileRequest{
+				DatasetID:     "dataset-123",
+				DatasetItemID: "item-123",
+				ContentType:   ContentTypeImagePNG,
+				Field:         "expectedOutput",
+				FilePath:      "/path/to/file.png",
+			},
+			false,
+			"",
 		},
 		{
 			"missing field",
@@ -564,7 +601,7 @@ func TestClient_UploadFromBytes_ValidationError(t *testing.T) {
 
 	_, err := client.UploadFromBytes(context.Background(), request)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "'traceId' is required")
+	require.Contains(t, err.Error(), "exactly one media context is required")
 }
 
 func TestClient_UploadFromBytes_ExistingFile(t *testing.T) {
@@ -671,7 +708,7 @@ func TestClient_UploadFile_ValidationError(t *testing.T) {
 
 	_, err := client.UploadFile(context.Background(), request)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "'traceId' is required")
+	require.Contains(t, err.Error(), "exactly one media context is required")
 }
 
 func TestClient_UploadFile_FileNotFound(t *testing.T) {

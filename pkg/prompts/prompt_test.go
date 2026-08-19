@@ -31,9 +31,11 @@ func TestListParams_ToQueryString(t *testing.T) {
 }
 
 func TestPromptClient_Get(t *testing.T) {
+	resolve := false
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			require.Equal(t, "/v2/prompts/test-prompt", r.URL.Path)
+			require.Equal(t, "false", r.URL.Query().Get("resolve"))
 			prompt := PromptEntry{Name: "test-prompt"}
 			w.Header().Set("Content-Type", "application/json")
 			err := json.NewEncoder(w).Encode(prompt)
@@ -43,9 +45,15 @@ func TestPromptClient_Get(t *testing.T) {
 
 	cli := resty.New().SetBaseURL(server.URL)
 	client := NewClient(cli)
-	prompt, err := client.Get(context.Background(), GetParams{Name: "test-prompt"})
+	prompt, err := client.Get(context.Background(), GetParams{Name: "test-prompt", Resolve: &resolve})
 	require.NoError(t, err)
 	require.Equal(t, "test-prompt", prompt.Name)
+}
+
+func TestPromptMetaIncludesType(t *testing.T) {
+	var prompt PromptMeta
+	require.NoError(t, json.Unmarshal([]byte(`{"name":"welcome","type":"chat"}`), &prompt))
+	require.Equal(t, "chat", prompt.Type)
 }
 
 func TestPromptClient_List(t *testing.T) {

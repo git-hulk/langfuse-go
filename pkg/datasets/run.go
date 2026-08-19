@@ -74,7 +74,9 @@ type CreateDatasetRunItemRequest struct {
 	Metadata      any    `json:"metadata,omitempty"`
 	ObservationID string `json:"observationId,omitempty"`
 	// traceId should always be provided. For compatibility with older SDK versions it can also be inferred from the provided observationId.
-	TraceID string `json:"traceId"`
+	TraceID        string     `json:"traceId"`
+	DatasetVersion *time.Time `json:"datasetVersion,omitempty"`
+	CreatedAt      *time.Time `json:"createdAt,omitempty"`
 }
 
 func (r *CreateDatasetRunItemRequest) validate() error {

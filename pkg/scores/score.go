@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/git-hulk/langfuse-go/pkg/common"
 	"github.com/git-hulk/langfuse-go/pkg/traces"
@@ -35,14 +36,15 @@ const (
 
 // ScoreDataType represents the data type and format of a score value.
 //
-// Scores can be numeric (float values), boolean (true/false), or categorical
-// (predefined categories with associated values).
+// Scores can be numeric, boolean, categorical, correction, or text values.
 type ScoreDataType string
 
 const (
 	ScoreDataTypeNumeric     ScoreDataType = "NUMERIC"
 	ScoreDataTypeBoolean     ScoreDataType = "BOOLEAN"
 	ScoreDataTypeCategorical ScoreDataType = "CATEGORICAL"
+	ScoreDataTypeCorrection  ScoreDataType = "CORRECTION"
+	ScoreDataTypeText        ScoreDataType = "TEXT"
 )
 
 // Score represents an evaluation score attached to a trace, observation, or session.
@@ -53,6 +55,7 @@ const (
 type Score struct {
 	DataType      ScoreDataType     `json:"dataType"`
 	Value         any               `json:"value"`
+	StringValue   string            `json:"stringValue,omitempty"`
 	ID            string            `json:"id"`
 	TraceID       string            `json:"traceId,omitempty"`
 	SessionID     string            `json:"sessionId,omitempty"`
@@ -68,6 +71,7 @@ type Score struct {
 	AuthorUserID  string            `json:"authorUserId,omitempty"`
 	QueueID       string            `json:"queueId,omitempty"`
 	Metadata      any               `json:"metadata,omitempty"`
+	Environment   string            `json:"environment"`
 	Trace         traces.TraceEntry `json:"trace,omitempty"`
 }
 
@@ -89,6 +93,8 @@ type CreateScoreRequest struct {
 	ConfigID      string        `json:"configId,omitempty"`
 	Environment   string        `json:"environment,omitempty"`
 	Metadata      any           `json:"metadata,omitempty"`
+	QueueID       string        `json:"queueId,omitempty"`
+	Source        ScoreSource   `json:"source,omitempty"`
 }
 
 func (r *CreateScoreRequest) validate() error {
@@ -98,9 +104,14 @@ func (r *CreateScoreRequest) validate() error {
 	if r.Value == nil {
 		return errors.New("'value' is required")
 	}
-	// At least one of TraceID, SessionID, or DatasetRunID must be provided
-	if r.TraceID == "" && r.SessionID == "" && r.DatasetRunID == "" {
-		return errors.New("at least one of 'traceId', 'sessionId', or 'datasetRunID' is required")
+	if r.TraceID == "" && r.SessionID == "" && r.ObservationID == "" && r.DatasetRunID == "" {
+		return errors.New("at least one of 'traceId', 'sessionId', 'observationId', or 'datasetRunId' is required")
+	}
+	if r.Source != "" && r.Source != ScoreSourceAPI && r.Source != ScoreSourceAnnotation {
+		return errors.New("'source' must be API or ANNOTATION")
+	}
+	if r.Source == ScoreSourceAnnotation && r.ConfigID == "" && r.DataType != ScoreDataTypeCorrection {
+		return errors.New("'configId' is required for ANNOTATION scores unless dataType is CORRECTION")
 	}
 	// Validate value according to data type
 	if err := r.validateValueByDataType(); err != nil {
@@ -122,21 +133,27 @@ type CreateScoreResponse struct {
 // to filter by creation time. Source and DataType can filter by score characteristics.
 // Page and Limit control pagination.
 type ListParams struct {
-	Page          int
-	Limit         int
-	UserID        string
-	Name          string
-	FromTimestamp time.Time
-	ToTimestamp   time.Time
-	Environment   []string
-	Source        ScoreSource
-	Operator      string
-	Value         float64
-	ScoreIDs      []string
-	ConfigID      string
-	QueueID       string
-	DataType      ScoreDataType
-	TraceTags     []string
+	Page           int
+	Limit          int
+	UserID         string
+	Name           string
+	FromTimestamp  time.Time
+	ToTimestamp    time.Time
+	Environment    []string
+	Source         ScoreSource
+	Operator       string
+	Value          float64
+	ScoreIDs       []string
+	ConfigID       string
+	QueueID        string
+	DataType       ScoreDataType
+	TraceTags      []string
+	TraceID        string
+	SessionID      string
+	ObservationIDs []string
+	DatasetRunID   string
+	Fields         []string
+	Filter         string
 }
 
 // ToQueryString converts the ListParams to a URL query string.
@@ -195,6 +212,24 @@ func (p *ListParams) ToQueryString() string {
 				parts = append(parts, "traceTags="+url.QueryEscape(tag))
 			}
 		}
+	}
+	if p.TraceID != "" {
+		parts = append(parts, "traceId="+url.QueryEscape(p.TraceID))
+	}
+	if p.SessionID != "" {
+		parts = append(parts, "sessionId="+url.QueryEscape(p.SessionID))
+	}
+	if len(p.ObservationIDs) > 0 {
+		parts = append(parts, "observationId="+url.QueryEscape(strings.Join(p.ObservationIDs, ",")))
+	}
+	if p.DatasetRunID != "" {
+		parts = append(parts, "datasetRunId="+url.QueryEscape(p.DatasetRunID))
+	}
+	if len(p.Fields) > 0 {
+		parts = append(parts, "fields="+url.QueryEscape(strings.Join(p.Fields, ",")))
+	}
+	if p.Filter != "" {
+		parts = append(parts, "filter="+url.QueryEscape(p.Filter))
 	}
 
 	return strings.Join(parts, "&")
@@ -306,9 +341,18 @@ func (r *CreateScoreRequest) validateValueByDataType() error {
 		default:
 			return errors.New("value must be 0, 1, or boolean for BOOLEAN data type")
 		}
-	case ScoreDataTypeCategorical:
+	case ScoreDataTypeCategorical, ScoreDataTypeCorrection:
 		if _, ok := r.Value.(string); !ok {
-			return errors.New("value must be a string for CATEGORICAL data type")
+			return fmt.Errorf("value must be a string for %s data type", r.DataType)
+		}
+	case ScoreDataTypeText:
+		value, ok := r.Value.(string)
+		if !ok {
+			return errors.New("value must be a string for TEXT data type")
+		}
+		length := utf8.RuneCountInString(value)
+		if length < 1 || length > 500 {
+			return errors.New("value must be between 1 and 500 characters for TEXT data type")
 		}
 	case ScoreDataTypeNumeric:
 		switch r.Value.(type) {

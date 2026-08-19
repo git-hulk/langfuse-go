@@ -147,6 +147,15 @@ func TestQuery_ToQueryStringViewSpecificMeasures(t *testing.T) {
 		wantErr string
 	}{
 		{
+			name: "boolean scores support count",
+			query: &Query{
+				View:          ViewScoresBoolean,
+				Metrics:       []Metric{{Measure: MeasureCount, Aggregation: "count"}},
+				FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
+				ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
+			},
+		},
+		{
 			name: "traces supports totalCost",
 			query: &Query{
 				View:          ViewTraces,

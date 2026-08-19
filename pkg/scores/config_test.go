@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-resty/resty/v2"
@@ -51,6 +52,32 @@ func TestCreateScoreConfigRequest_validate(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "valid text config",
+			request: CreateScoreConfigRequest{
+				Name:     "written feedback",
+				DataType: ScoreDataTypeText,
+			},
+			wantErr: false,
+		},
+		{
+			name: "name exceeds current API limit",
+			request: CreateScoreConfigRequest{
+				Name:     strings.Repeat("a", 36),
+				DataType: ScoreDataTypeText,
+			},
+			wantErr: true,
+			errMsg:  "'name' must not exceed 35 characters",
+		},
+		{
+			name: "name contains unsupported characters",
+			request: CreateScoreConfigRequest{
+				Name:     "quality!",
+				DataType: ScoreDataTypeText,
+			},
+			wantErr: true,
+			errMsg:  "'name' contains unsupported characters",
 		},
 		{
 			name: "missing name",

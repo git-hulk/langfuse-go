@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/git-hulk/langfuse-go/pkg/common"
 )
@@ -52,15 +54,23 @@ type CreateScoreConfigRequest struct {
 	Description string           `json:"description,omitempty"`
 }
 
+var scoreConfigNamePattern = regexp.MustCompile(`^[A-Za-z0-9_ .()-]+$`)
+
 func (r *CreateScoreConfigRequest) validate() error {
 	if r.Name == "" {
 		return errors.New("'name' is required")
+	}
+	if utf8.RuneCountInString(r.Name) > 35 {
+		return errors.New("'name' must not exceed 35 characters")
+	}
+	if !scoreConfigNamePattern.MatchString(r.Name) {
+		return errors.New("'name' contains unsupported characters")
 	}
 	if r.DataType == "" {
 		return errors.New("'dataType' is required")
 	}
 	// Validate that dataType is a valid value
-	validDataTypes := []ScoreDataType{ScoreDataTypeNumeric, ScoreDataTypeBoolean, ScoreDataTypeCategorical}
+	validDataTypes := []ScoreDataType{ScoreDataTypeNumeric, ScoreDataTypeBoolean, ScoreDataTypeCategorical, ScoreDataTypeText}
 	isValid := false
 	for _, dt := range validDataTypes {
 		if r.DataType == dt {
@@ -69,7 +79,7 @@ func (r *CreateScoreConfigRequest) validate() error {
 		}
 	}
 	if !isValid {
-		return fmt.Errorf("invalid 'dataType': %s, must be one of NUMERIC, BOOLEAN, CATEGORICAL", r.DataType)
+		return fmt.Errorf("invalid 'dataType': %s, must be one of NUMERIC, BOOLEAN, CATEGORICAL, TEXT", r.DataType)
 	}
 
 	// Validate categories for categorical scores

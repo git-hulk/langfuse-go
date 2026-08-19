@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/require"
@@ -52,6 +54,14 @@ func TestCreateDatasetItemRequest_validate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "item ID exceeds current API limit",
+			request: CreateDatasetItemRequest{
+				DatasetName: "test-dataset",
+				ID:          strings.Repeat("a", 256),
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -83,8 +93,9 @@ func TestListDatasetItemParams_ToQueryString(t *testing.T) {
 				Page:        1,
 				Limit:       10,
 				DatasetName: "test-dataset",
+				Version:     time.Date(2026, 7, 29, 10, 0, 0, 0, time.UTC),
 			},
-			want: "datasetName=test-dataset&page=1&limit=10",
+			want: "datasetName=test-dataset&version=2026-07-29T10%3A00%3A00Z&page=1&limit=10",
 		},
 		{
 			name: "partial params",
@@ -149,10 +160,25 @@ func TestDatasetItemStructures(t *testing.T) {
 			Input:          map[string]any{"text": "hello"},
 			ExpectedOutput: map[string]any{"response": "hi"},
 			Metadata:       map[string]any{"model": "gpt-4"},
+			MediaReferences: []DatasetItemMediaReference{
+				{
+					Field:           DatasetItemMediaReferenceFieldInput,
+					ReferenceString: "@@@langfuseMedia:type=image/png|id=media-1|source=bytes@@@",
+					JSONPath:        "$['image']",
+					Media: DatasetItemMedia{
+						MediaID:       "media-1",
+						ContentType:   "image/png",
+						ContentLength: 42,
+						URL:           "https://example.com/media-1",
+						URLExpiry:     "2026-07-29T14:00:00Z",
+					},
+				},
+			},
 		}
 
 		require.Equal(t, "item-123", item.ID)
 		require.Equal(t, "test-dataset", item.DatasetName)
+		require.Equal(t, "media-1", item.MediaReferences[0].Media.MediaID)
 	})
 
 	t.Run("CreateDatasetItemRequest with optional fields", func(t *testing.T) {
@@ -186,6 +212,7 @@ func TestDatasetItemClient_List(t *testing.T) {
 			require.Equal(t, "10", query.Get("limit"))
 			require.Equal(t, "trace-123", query.Get("sourceTraceId"))
 			require.Equal(t, "obs-456", query.Get("sourceObservationId"))
+			require.Equal(t, "2026-07-29T10:00:00Z", query.Get("version"))
 
 			mockResponse := ListDatasetItems{
 				Metadata: common.ListMetadata{
@@ -229,6 +256,7 @@ func TestDatasetItemClient_List(t *testing.T) {
 			Limit:               10,
 			SourceTraceID:       "trace-123",
 			SourceObservationID: "obs-456",
+			Version:             time.Date(2026, 7, 29, 10, 0, 0, 0, time.UTC),
 		}
 
 		result, err := datasetClient.ListDatasetItems(ctx, params)

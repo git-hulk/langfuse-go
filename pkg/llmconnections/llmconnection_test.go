@@ -136,6 +136,7 @@ func TestClient_List(t *testing.T) {
 					"customModels": ["gpt-4"],
 					"withDefaultModels": true,
 					"extraHeaderKeys": ["X-Custom-Header"],
+					"config": {"useResponsesApi": true},
 					"createdAt": "2023-01-01T00:00:00Z",
 					"updatedAt": "2023-01-01T00:00:00Z"
 				}
@@ -168,6 +169,7 @@ func TestClient_List(t *testing.T) {
 	assert.Equal(t, []string{"gpt-4"}, result.Data[0].CustomModels)
 	assert.True(t, result.Data[0].WithDefaultModels)
 	assert.Equal(t, []string{"X-Custom-Header"}, result.Data[0].ExtraHeaderKeys)
+	assert.Equal(t, true, result.Data[0].Config["useResponsesApi"])
 }
 
 func TestClient_Upsert(t *testing.T) {
@@ -207,6 +209,7 @@ func TestClient_Upsert(t *testing.T) {
 		CustomModels:      []string{"gpt-4", "gpt-3.5-turbo"},
 		WithDefaultModels: withDefaultModels,
 		ExtraHeaders:      map[string]string{},
+		Config:            map[string]any{"useResponsesApi": true},
 	}
 
 	result, err := client.Upsert(context.Background(), req)

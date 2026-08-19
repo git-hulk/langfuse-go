@@ -56,6 +56,15 @@ func TestCreateItemRequest_validate(t *testing.T) {
 			"",
 		},
 		{
+			"valid session request",
+			CreateItemRequest{
+				ObjectID:   "session-789",
+				ObjectType: ObjectTypeSession,
+			},
+			false,
+			"",
+		},
+		{
 			"missing objectId",
 			CreateItemRequest{
 				ObjectType: ObjectTypeTrace,

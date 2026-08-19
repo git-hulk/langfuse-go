@@ -1041,9 +1041,10 @@ func runProjectTests(client *langfuse.Langfuse) {
 
 	// Test updating a project (demonstration only)
 	fmt.Println("Demonstrating project update request structure...")
+	updateRetention := 60
 	testUpdate := &projects.UpdateProjectRequest{
 		Name:      "updated-test-project",
-		Retention: 60,
+		Retention: &updateRetention,
 		Metadata: map[string]interface{}{
 			"environment": "production",
 			"purpose":     "updated-purpose",
@@ -1052,7 +1053,7 @@ func runProjectTests(client *langfuse.Langfuse) {
 	}
 
 	fmt.Printf("Sample project update: Name=%s, Retention=%d days\n",
-		testUpdate.Name, testUpdate.Retention)
+		testUpdate.Name, *testUpdate.Retention)
 	fmt.Printf("Updated metadata: %v\n", testUpdate.Metadata)
 
 	fmt.Println("Skipping actual project update to prevent unintended changes")

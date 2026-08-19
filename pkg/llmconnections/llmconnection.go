@@ -41,16 +41,17 @@ const (
 // base URLs, and metadata. Sensitive information like API keys is excluded
 // from this structure for security reasons.
 type LLMConnection struct {
-	ID                string     `json:"id"`
-	Provider          string     `json:"provider"`
-	Adapter           LLMAdapter `json:"adapter"`
-	DisplaySecretKey  string     `json:"displaySecretKey"`
-	BaseURL           string     `json:"baseURL,omitempty"`
-	CustomModels      []string   `json:"customModels"`
-	WithDefaultModels bool       `json:"withDefaultModels"`
-	ExtraHeaderKeys   []string   `json:"extraHeaderKeys"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	UpdatedAt         time.Time  `json:"updatedAt"`
+	ID                string         `json:"id"`
+	Provider          string         `json:"provider"`
+	Adapter           LLMAdapter     `json:"adapter"`
+	DisplaySecretKey  string         `json:"displaySecretKey"`
+	BaseURL           string         `json:"baseURL,omitempty"`
+	CustomModels      []string       `json:"customModels"`
+	WithDefaultModels bool           `json:"withDefaultModels"`
+	ExtraHeaderKeys   []string       `json:"extraHeaderKeys"`
+	Config            map[string]any `json:"config,omitempty"`
+	CreatedAt         time.Time      `json:"createdAt"`
+	UpdatedAt         time.Time      `json:"updatedAt"`
 }
 
 // UpsertLLMConnectionRequest represents the parameters for creating or updating an LLM connection.
@@ -66,6 +67,7 @@ type UpsertLLMConnectionRequest struct {
 	CustomModels      []string          `json:"customModels,omitempty"`
 	WithDefaultModels bool              `json:"withDefaultModels,omitempty"`
 	ExtraHeaders      map[string]string `json:"extraHeaders,omitempty"`
+	Config            map[string]any    `json:"config,omitempty"`
 }
 
 func (r *UpsertLLMConnectionRequest) validate() error {

@@ -26,13 +26,16 @@ import (
 // A dataset is a collection of data items used for training, evaluation, or testing
 // AI models. It includes identification, descriptive information, and audit timestamps.
 type Dataset struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
-	Metadata    any       `json:"metadata,omitempty"`
-	ProjectID   string    `json:"projectId"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Metadata    any    `json:"metadata,omitempty"`
+	InputSchema any    `json:"inputSchema,omitempty"`
+	// ExpectedOutputSchema is the JSON Schema used to validate expected outputs.
+	ExpectedOutputSchema any       `json:"expectedOutputSchema,omitempty"`
+	ProjectID            string    `json:"projectId"`
+	CreatedAt            time.Time `json:"createdAt"`
+	UpdatedAt            time.Time `json:"updatedAt"`
 }
 
 // CreateDatasetRequest represents the parameters for creating a new dataset.
@@ -43,6 +46,9 @@ type CreateDatasetRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Metadata    any    `json:"metadata,omitempty"`
+	InputSchema any    `json:"inputSchema,omitempty"`
+	// ExpectedOutputSchema is the JSON Schema used to validate expected outputs.
+	ExpectedOutputSchema any `json:"expectedOutputSchema,omitempty"`
 }
 
 func (r *CreateDatasetRequest) validate() error {

@@ -236,15 +236,18 @@ func (query *ListParams) ToQueryString() string {
 // GetParams defines the parameters for retrieving a specific prompt.
 //
 // Use Name to specify the prompt name, Label for a specific label,
-// and Version for a specific version. If Version is 0, the latest version is returned.
+// Version for a specific version, and Resolve to control dependency resolution.
+// If Version is 0, the latest version is returned. A nil Resolve uses the API default.
 type GetParams struct {
 	Name    string
 	Label   string
 	Version int
+	Resolve *bool
 }
 
 type PromptMeta struct {
 	Name          string    `json:"name"`
+	Type          string    `json:"type"`
 	Labels        []string  `json:"labels"`
 	Tags          []string  `json:"tags"`
 	Versions      []int     `json:"versions"`
@@ -290,6 +293,9 @@ func (c *Client) Get(ctx context.Context, params GetParams) (*PromptEntry, error
 	}
 	if params.Label != "" {
 		req.SetQueryParam("label", params.Label)
+	}
+	if params.Resolve != nil {
+		req.SetQueryParam("resolve", strconv.FormatBool(*params.Resolve))
 	}
 	req.SetPathParam("name", params.Name)
 

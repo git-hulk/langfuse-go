@@ -6,10 +6,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/require"
 )
+
+func mustParseTime(value string) time.Time {
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		panic(err)
+	}
+	return parsed
+}
 
 func TestListParams_ToQueryString(t *testing.T) {
 	tests := []struct {
@@ -72,7 +81,22 @@ func TestModelClient_Get(t *testing.T) {
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			require.Equal(t, "/models/test-model-id", r.URL.Path)
-			model := ModelEntry{ID: "test-model-id", ModelName: "gpt-4", Unit: "TOKENS"}
+			model := ModelEntry{
+				ID:        "test-model-id",
+				ModelName: "gpt-4",
+				Unit:      "TOKENS",
+				CreatedAt: mustParseTime("2026-07-29T10:00:00Z"),
+				PricingTiers: []PricingTier{
+					{
+						ID:         "tier-1",
+						Name:       "Standard",
+						IsDefault:  true,
+						Priority:   0,
+						Conditions: []PricingTierCondition{},
+						Prices:     map[string]float64{"input": 0.000003},
+					},
+				},
+			}
 			w.Header().Set("Content-Type", "application/json")
 			err := json.NewEncoder(w).Encode(model)
 			require.NoError(t, err)
@@ -86,6 +110,8 @@ func TestModelClient_Get(t *testing.T) {
 	require.Equal(t, "test-model-id", model.ID)
 	require.Equal(t, "gpt-4", model.ModelName)
 	require.Equal(t, "TOKENS", model.Unit)
+	require.Equal(t, "tier-1", model.PricingTiers[0].ID)
+	require.Equal(t, 0.000003, model.PricingTiers[0].Prices["input"])
 }
 
 func TestModelClient_Get_MissingID(t *testing.T) {
@@ -131,6 +157,9 @@ func TestModelClient_Create(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, "gpt-4-custom", model.ModelName)
 			require.Equal(t, "TOKENS", model.Unit)
+			require.Len(t, model.PricingTiers, 1)
+			require.True(t, model.PricingTiers[0].IsDefault)
+			require.Equal(t, 0.000003, model.PricingTiers[0].Prices["input"])
 			// Return the created model with an ID
 			model.ID = "created-model-id"
 			w.Header().Set("Content-Type", "application/json")
@@ -146,8 +175,15 @@ func TestModelClient_Create(t *testing.T) {
 		MatchPattern: ".*gpt-4.*",
 		ModelName:    "gpt-4-custom",
 		Unit:         "TOKENS",
-		InputPrice:   0.03,
-		OutputPrice:  0.06,
+		PricingTiers: []PricingTier{
+			{
+				Name:       "Standard",
+				IsDefault:  true,
+				Priority:   0,
+				Conditions: []PricingTierCondition{},
+				Prices:     map[string]float64{"input": 0.000003, "output": 0.000015},
+			},
+		},
 	}
 	model, err := client.Create(context.Background(), createModel)
 	require.NoError(t, err)
