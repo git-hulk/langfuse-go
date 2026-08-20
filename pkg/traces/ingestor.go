@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -54,7 +53,12 @@ func NewIngestor(host, publicKey, secretKey string, opts ...IngestorOption) (*In
 		)
 	}
 
-	otel.SetTracerProvider(provider)
+	// Use a private tracer bound directly to our own provider rather than
+	// publishing it as the global one via otel.SetTracerProvider. Doing so
+	// would clobber any global TracerProvider the host application already
+	// installed (e.g. an APM), redirecting its spans into Langfuse. All of
+	// this ingestor's spans flow through this tracer, so the global is never
+	// needed here.
 	t := provider.Tracer("langfuse-go")
 
 	return &Ingestor{
