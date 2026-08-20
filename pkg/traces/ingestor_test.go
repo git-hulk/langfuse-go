@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -18,6 +19,21 @@ func newTestIngestor(t *testing.T) (*Ingestor, *tracetest.InMemoryExporter) {
 	ingestor, err := NewIngestor("http://localhost", "pk", "sk", WithSpanProcessor(sp))
 	require.NoError(t, err)
 	return ingestor, exporter
+}
+
+func TestNewIngestor_DoesNotOverrideGlobalProvider(t *testing.T) {
+	// Simulate a host application (or APM) that has already installed a global
+	// TracerProvider. Creating a Langfuse ingestor must leave it untouched.
+	sentinel := sdktrace.NewTracerProvider()
+	otel.SetTracerProvider(sentinel)
+
+	sp := sdktrace.NewSimpleSpanProcessor(tracetest.NewInMemoryExporter())
+	ingestor, err := NewIngestor("http://localhost", "pk", "sk", WithSpanProcessor(sp))
+	require.NoError(t, err)
+	defer ingestor.Close()
+
+	assert.Same(t, sentinel, otel.GetTracerProvider(),
+		"NewIngestor must not override the global TracerProvider")
 }
 
 func TestIngestor_StartTrace(t *testing.T) {
