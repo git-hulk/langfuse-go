@@ -10,7 +10,7 @@ import (
 )
 
 func TestObservation_End(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "test-trace")

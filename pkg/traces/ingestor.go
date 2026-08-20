@@ -9,25 +9,25 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-type OtelIngestor struct {
+type Ingestor struct {
 	provider *sdktrace.TracerProvider
 	tracer   tracer
 }
 
-type OtelIngestorOption func(*otelIngestorConfig)
+type IngestorOption func(*ingestorConfig)
 
-type otelIngestorConfig struct {
+type ingestorConfig struct {
 	spanProcessor sdktrace.SpanProcessor
 }
 
-func WithSpanProcessor(sp sdktrace.SpanProcessor) OtelIngestorOption {
-	return func(c *otelIngestorConfig) {
+func WithSpanProcessor(sp sdktrace.SpanProcessor) IngestorOption {
+	return func(c *ingestorConfig) {
 		c.spanProcessor = sp
 	}
 }
 
-func NewOtelIngestor(host, publicKey, secretKey string, opts ...OtelIngestorOption) (*OtelIngestor, error) {
-	cfg := &otelIngestorConfig{}
+func NewIngestor(host, publicKey, secretKey string, opts ...IngestorOption) (*Ingestor, error) {
+	cfg := &ingestorConfig{}
 	for _, opt := range opts {
 		opt(cfg)
 	}
@@ -57,7 +57,7 @@ func NewOtelIngestor(host, publicKey, secretKey string, opts ...OtelIngestorOpti
 	otel.SetTracerProvider(provider)
 	t := provider.Tracer("langfuse-go")
 
-	return &OtelIngestor{
+	return &Ingestor{
 		provider: provider,
 		tracer:   t,
 	}, nil
@@ -67,7 +67,7 @@ func NewOtelIngestor(host, publicKey, secretKey string, opts ...OtelIngestorOpti
 //
 // Returns the context carrying the trace span and the Trace itself. Pass the returned
 // context to the trace's StartXXX methods to nest observations under this trace.
-func (oi *OtelIngestor) StartTrace(ctx context.Context, name string) (context.Context, *Trace) {
+func (oi *Ingestor) StartTrace(ctx context.Context, name string) (context.Context, *Trace) {
 	ctx, span := oi.tracer.Start(ctx, name)
 	sc := span.SpanContext()
 	return ctx, &Trace{
@@ -80,10 +80,10 @@ func (oi *OtelIngestor) StartTrace(ctx context.Context, name string) (context.Co
 	}
 }
 
-func (oi *OtelIngestor) Flush() {
+func (oi *Ingestor) Flush() {
 	oi.provider.ForceFlush(context.Background())
 }
 
-func (oi *OtelIngestor) Close() error {
+func (oi *Ingestor) Close() error {
 	return oi.provider.Shutdown(context.Background())
 }
