@@ -11,17 +11,17 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
-func newTestOtelIngestor(t *testing.T) (*OtelIngestor, *tracetest.InMemoryExporter) {
+func newTestIngestor(t *testing.T) (*Ingestor, *tracetest.InMemoryExporter) {
 	t.Helper()
 	exporter := tracetest.NewInMemoryExporter()
 	sp := sdktrace.NewSimpleSpanProcessor(exporter)
-	ingestor, err := NewOtelIngestor("http://localhost", "pk", "sk", WithSpanProcessor(sp))
+	ingestor, err := NewIngestor("http://localhost", "pk", "sk", WithSpanProcessor(sp))
 	require.NoError(t, err)
 	return ingestor, exporter
 }
 
-func TestOtelIngestor_StartTrace(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+func TestIngestor_StartTrace(t *testing.T) {
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "test-trace")
@@ -34,8 +34,8 @@ func TestOtelIngestor_StartTrace(t *testing.T) {
 	assert.Equal(t, trace.SpanContext().SpanID(), oteltrace.SpanFromContext(ctx).SpanContext().SpanID())
 }
 
-func TestOtelIngestor_TraceUniqueIDs(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+func TestIngestor_TraceUniqueIDs(t *testing.T) {
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ids := make(map[string]bool)
@@ -47,8 +47,8 @@ func TestOtelIngestor_TraceUniqueIDs(t *testing.T) {
 	}
 }
 
-func TestOtelIngestor_EndTrace_ExportsSpan(t *testing.T) {
-	ingestor, exporter := newTestOtelIngestor(t)
+func TestIngestor_EndTrace_ExportsSpan(t *testing.T) {
+	ingestor, exporter := newTestIngestor(t)
 	defer ingestor.Close()
 
 	_, trace := ingestor.StartTrace(context.Background(), "exported-trace")
@@ -78,8 +78,8 @@ func TestOtelIngestor_EndTrace_ExportsSpan(t *testing.T) {
 	assert.Equal(t, "test", attrMap[AttrEnvironment])
 }
 
-func TestOtelIngestor_StartObservation(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+func TestIngestor_StartObservation(t *testing.T) {
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
@@ -94,8 +94,8 @@ func TestOtelIngestor_StartObservation(t *testing.T) {
 	assert.Equal(t, obs.SpanContext().SpanID(), oteltrace.SpanFromContext(obsCtx).SpanContext().SpanID())
 }
 
-func TestOtelIngestor_ObservationParentChild(t *testing.T) {
-	ingestor, exporter := newTestOtelIngestor(t)
+func TestIngestor_ObservationParentChild(t *testing.T) {
+	ingestor, exporter := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
@@ -119,8 +119,8 @@ func TestOtelIngestor_ObservationParentChild(t *testing.T) {
 	assert.Equal(t, traceSpanID, spanByName["span-2"].Parent.SpanID())
 }
 
-func TestOtelIngestor_NestedObservations(t *testing.T) {
-	ingestor, exporter := newTestOtelIngestor(t)
+func TestIngestor_NestedObservations(t *testing.T) {
+	ingestor, exporter := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
@@ -143,8 +143,8 @@ func TestOtelIngestor_NestedObservations(t *testing.T) {
 	assert.Equal(t, spanByName["agent"].SpanContext.SpanID(), spanByName["tool"].Parent.SpanID())
 }
 
-func TestOtelIngestor_Generation(t *testing.T) {
-	ingestor, exporter := newTestOtelIngestor(t)
+func TestIngestor_Generation(t *testing.T) {
+	ingestor, exporter := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "trace")
@@ -179,8 +179,8 @@ func TestOtelIngestor_Generation(t *testing.T) {
 	assert.Contains(t, attrMap[AttrObservationUsageDetails], "TOKENS")
 }
 
-func TestOtelIngestor_FlushAndClose(t *testing.T) {
-	ingestor, exporter := newTestOtelIngestor(t)
+func TestIngestor_FlushAndClose(t *testing.T) {
+	ingestor, exporter := newTestIngestor(t)
 
 	_, trace := ingestor.StartTrace(context.Background(), "flush-test")
 	trace.End()
@@ -192,8 +192,8 @@ func TestOtelIngestor_FlushAndClose(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestOtelIngestor_EndedSpanParenting(t *testing.T) {
-	ingestor, exporter := newTestOtelIngestor(t)
+func TestIngestor_EndedSpanParenting(t *testing.T) {
+	ingestor, exporter := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "trace")

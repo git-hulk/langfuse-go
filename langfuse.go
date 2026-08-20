@@ -127,7 +127,7 @@ func NewClient(host string, publicKey string, secretKey string, options ...Clien
 	restyCli.SetBaseURL(host+"/api/public").
 		SetBasicAuth(publicKey, secretKey)
 
-	otelIngestor, err := traces.NewOtelIngestor(host, publicKey, secretKey)
+	otelIngestor, err := traces.NewIngestor(host, publicKey, secretKey)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create OTel ingestor: %v", err))
 	}

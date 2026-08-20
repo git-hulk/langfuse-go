@@ -9,7 +9,7 @@ import (
 )
 
 func TestTrace_StartSpan(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "test-traces")
@@ -27,7 +27,7 @@ func TestTrace_StartSpan(t *testing.T) {
 }
 
 func TestTrace_MultipleSpans(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "test-traces")
@@ -67,7 +67,7 @@ func TestTrace_Fields(t *testing.T) {
 }
 
 func TestTrace_SpansHaveUniqueIDs(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "test-trace")
@@ -82,7 +82,7 @@ func TestTrace_SpansHaveUniqueIDs(t *testing.T) {
 }
 
 func TestTrace_StartObservation(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "test-trace")
@@ -103,7 +103,7 @@ func TestTrace_StartObservation(t *testing.T) {
 }
 
 func TestTrace_StartGeneration(t *testing.T) {
-	ingestor, _ := newTestOtelIngestor(t)
+	ingestor, _ := newTestIngestor(t)
 	defer ingestor.Close()
 
 	ctx, trace := ingestor.StartTrace(context.Background(), "test-trace")
