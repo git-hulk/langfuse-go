@@ -103,8 +103,8 @@ func main() {
 
     ctx := context.Background()
 
-    metricsResponse, err := langfuse.Metrics().Get(ctx, &metrics.Query{
-        View: metrics.ViewTraces,
+    metricsResponse, err := langfuse.Metrics().GetV2(ctx, &metrics.V2Query{
+        View: metrics.ViewObservations,
         Metrics: []metrics.Metric{
             {Measure: metrics.MeasureCount, Aggregation: "count"},
         },
@@ -121,12 +121,12 @@ func main() {
         panic(err)
     }
 
-    type TraceMetricRow struct {
+    type ObservationMetricRow struct {
         Name  string `json:"name"`
         Count string `json:"count_count"`
     }
 
-    rows, err := metrics.DecodeRows[TraceMetricRow](metricsResponse.Data)
+    rows, err := metrics.DecodeRows[ObservationMetricRow](metricsResponse.Data)
     if err != nil {
         panic(err)
     }
@@ -145,6 +145,8 @@ func main() {
     fmt.Println(name, rows[0].Name, rows[0].Count)
 }
 ```
+
+`GetV2` is the recommended Metrics API for Langfuse deployments that expose the v4 preview read path or v4. It does not support the legacy `traces` view; use `observations` instead. `Get` and `Query` remain available for the legacy `/api/public/metrics` endpoint.
 
 ### Comments
 

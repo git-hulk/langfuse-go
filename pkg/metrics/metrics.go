@@ -50,17 +50,22 @@ const (
 
 // Metric measure constants for use in Query.Metrics.
 const (
-	MeasureCount             = "count"
-	MeasureObservationsCount = "observationsCount"
-	MeasureScoresCount       = "scoresCount"
-	MeasureInputTokens       = "inputTokens"
-	MeasureLatency           = "latency"
-	MeasureOutputTokens      = "outputTokens"
-	MeasureTotalTokens       = "totalTokens"
-	MeasureTotalCost         = "totalCost"
-	MeasureTimeToFirstToken  = "timeToFirstToken"
-	MeasureCountScores       = "countScores"
-	MeasureValue             = "value"
+	MeasureCount                 = "count"
+	MeasureObservationsCount     = "observationsCount"
+	MeasureScoresCount           = "scoresCount"
+	MeasureInputTokens           = "inputTokens"
+	MeasureLatency               = "latency"
+	MeasureOutputTokens          = "outputTokens"
+	MeasureTotalTokens           = "totalTokens"
+	MeasureTotalCost             = "totalCost"
+	MeasureTimeToFirstToken      = "timeToFirstToken"
+	MeasureCountScores           = "countScores"
+	MeasureValue                 = "value"
+	MeasureStreamingLatency      = "streamingLatency"
+	MeasureOutputTokensPerSecond = "outputTokensPerSecond"
+	MeasureTokensPerSecond       = "tokensPerSecond"
+	MeasureInputCost             = "inputCost"
+	MeasureOutputCost            = "outputCost"
 )
 
 var validViews = map[View]struct{}{
@@ -110,6 +115,42 @@ var validMeasuresByView = map[View]map[string]struct{}{
 	},
 	ViewScoresBoolean: {
 		MeasureCount: {},
+	},
+	ViewScoresCategorical: {
+		MeasureCount: {},
+	},
+}
+
+var validV2Views = map[View]struct{}{
+	ViewObservations:      {},
+	ViewScoresNumeric:     {},
+	ViewScoresBoolean:     {},
+	ViewScoresCategorical: {},
+}
+
+var validV2MeasuresByView = map[View]map[string]struct{}{
+	ViewObservations: {
+		MeasureCount:                 {},
+		MeasureInputTokens:           {},
+		MeasureLatency:               {},
+		MeasureOutputTokens:          {},
+		MeasureTotalTokens:           {},
+		MeasureTotalCost:             {},
+		MeasureTimeToFirstToken:      {},
+		MeasureCountScores:           {},
+		MeasureStreamingLatency:      {},
+		MeasureOutputTokensPerSecond: {},
+		MeasureTokensPerSecond:       {},
+		MeasureInputCost:             {},
+		MeasureOutputCost:            {},
+	},
+	ViewScoresNumeric: {
+		MeasureCount: {},
+		MeasureValue: {},
+	},
+	ViewScoresBoolean: {
+		MeasureCount: {},
+		MeasureValue: {},
 	},
 	ViewScoresCategorical: {
 		MeasureCount: {},
@@ -170,44 +211,73 @@ func (q *Query) validate() error {
 	if q == nil {
 		return errors.New("'query' is required")
 	}
-	if q.View == "" {
+
+	return validateQuery(
+		q.View,
+		q.Dimensions,
+		q.Metrics,
+		q.Filters,
+		q.TimeDimension,
+		q.FromTimestamp,
+		q.ToTimestamp,
+		q.OrderBy,
+		q.Config,
+		validViews,
+		validMeasuresByView,
+	)
+}
+
+func validateQuery(
+	view View,
+	dimensions []Dimension,
+	metrics []Metric,
+	filters []Filter,
+	timeDimension *TimeDimension,
+	fromTimestamp time.Time,
+	toTimestamp time.Time,
+	orderBy []OrderBy,
+	config *QueryConfig,
+	allowedViews map[View]struct{},
+	allowedMeasures map[View]map[string]struct{},
+) error {
+	if view == "" {
 		return errors.New("'view' is required")
 	}
-	if _, ok := validViews[q.View]; !ok {
-		return fmt.Errorf("invalid 'view': %s", q.View)
+	if _, ok := allowedViews[view]; !ok {
+		return fmt.Errorf("invalid 'view': %s", view)
 	}
-	if len(q.Metrics) == 0 {
+	if len(metrics) == 0 {
 		return errors.New("at least one 'metric' is required")
 	}
-	if q.FromTimestamp.IsZero() {
+	if fromTimestamp.IsZero() {
 		return errors.New("'fromTimestamp' is required")
 	}
-	if q.ToTimestamp.IsZero() {
+	if toTimestamp.IsZero() {
 		return errors.New("'toTimestamp' is required")
 	}
-	if q.ToTimestamp.Before(q.FromTimestamp) {
+	if toTimestamp.Before(fromTimestamp) {
 		return errors.New("'toTimestamp' must be greater than or equal to 'fromTimestamp'")
 	}
 
-	for i, dimension := range q.Dimensions {
+	for i, dimension := range dimensions {
 		if dimension.Field == "" {
 			return fmt.Errorf("'dimensions[%d].field' is required", i)
 		}
 	}
 
-	for i, metric := range q.Metrics {
+	for i, metric := range metrics {
 		if metric.Measure == "" {
 			return fmt.Errorf("'metrics[%d].measure' is required", i)
 		}
-		if _, ok := validMeasuresByView[q.View][metric.Measure]; !ok {
-			return fmt.Errorf("invalid 'metrics[%d].measure' %q for view %q", i, metric.Measure, q.View)
+		if _, ok := allowedMeasures[view][metric.Measure]; !ok {
+			return fmt.Errorf("invalid 'metrics[%d].measure' %q for view %q", i, metric.Measure, view)
 		}
 		if metric.Aggregation == "" {
 			return fmt.Errorf("'metrics[%d].aggregation' is required", i)
 		}
 	}
 
-	for i, filter := range q.Filters {
+	for i, filter := range filters {
 		if filter.Column == "" {
 			return fmt.Errorf("'filters[%d].column' is required", i)
 		}
@@ -219,16 +289,16 @@ func (q *Query) validate() error {
 		}
 	}
 
-	if q.TimeDimension != nil {
-		if q.TimeDimension.Granularity == "" {
+	if timeDimension != nil {
+		if timeDimension.Granularity == "" {
 			return errors.New("'timeDimension.granularity' is required")
 		}
-		if _, ok := validGranularities[q.TimeDimension.Granularity]; !ok {
-			return fmt.Errorf("invalid 'timeDimension.granularity': %s", q.TimeDimension.Granularity)
+		if _, ok := validGranularities[timeDimension.Granularity]; !ok {
+			return fmt.Errorf("invalid 'timeDimension.granularity': %s", timeDimension.Granularity)
 		}
 	}
 
-	for i, order := range q.OrderBy {
+	for i, order := range orderBy {
 		if order.Field == "" {
 			return fmt.Errorf("'orderBy[%d].field' is required", i)
 		}
@@ -240,16 +310,68 @@ func (q *Query) validate() error {
 		}
 	}
 
-	if q.Config != nil {
-		if q.Config.Bins != 0 && (q.Config.Bins < 1 || q.Config.Bins > 100) {
+	if config != nil {
+		if config.Bins != 0 && (config.Bins < 1 || config.Bins > 100) {
 			return errors.New("'config.bins' must be between 1 and 100")
 		}
-		if q.Config.RowLimit != 0 && (q.Config.RowLimit < 1 || q.Config.RowLimit > 1000) {
+		if config.RowLimit != 0 && (config.RowLimit < 1 || config.RowLimit > 1000) {
 			return errors.New("'config.row_limit' must be between 1 and 1000")
 		}
 	}
 
 	return nil
+}
+
+// V2Query represents a metrics query sent to GET /api/public/v2/metrics.
+//
+// V2 supports observations and score views only; it does not support the
+// traces view available through the legacy endpoint.
+type V2Query struct {
+	View          View           `json:"view"`
+	Dimensions    []Dimension    `json:"dimensions,omitempty"`
+	Metrics       []Metric       `json:"metrics"`
+	Filters       []Filter       `json:"filters,omitempty"`
+	TimeDimension *TimeDimension `json:"timeDimension,omitempty"`
+	FromTimestamp time.Time      `json:"fromTimestamp"`
+	ToTimestamp   time.Time      `json:"toTimestamp"`
+	OrderBy       []OrderBy      `json:"orderBy,omitempty"`
+	Config        *QueryConfig   `json:"config,omitempty"`
+}
+
+func (q *V2Query) validate() error {
+	if q == nil {
+		return errors.New("'query' is required")
+	}
+
+	return validateQuery(
+		q.View,
+		q.Dimensions,
+		q.Metrics,
+		q.Filters,
+		q.TimeDimension,
+		q.FromTimestamp,
+		q.ToTimestamp,
+		q.OrderBy,
+		q.Config,
+		validV2Views,
+		validV2MeasuresByView,
+	)
+}
+
+// ToQueryString converts the v2 metrics query to the API's URL-encoded query parameter format.
+func (q *V2Query) ToQueryString() (string, error) {
+	if err := q.validate(); err != nil {
+		return "", err
+	}
+
+	payload, err := json.Marshal(q)
+	if err != nil {
+		return "", fmt.Errorf("marshal query failed: %w", err)
+	}
+
+	query := url.Values{}
+	query.Add("query", string(payload))
+	return query.Encode(), nil
 }
 
 // ToQueryString converts the metrics query to the API's URL-encoded query parameter format.
@@ -337,7 +459,9 @@ func NewClient(cli *resty.Client) *Client {
 	return &Client{restyCli: cli}
 }
 
-// Get runs a metrics query against the Langfuse public metrics API.
+// Get runs a metrics query against the legacy Langfuse public metrics API.
+//
+// Deprecated: use GetV2 for Langfuse deployments that expose the v2 metrics API.
 func (c *Client) Get(ctx context.Context, query *Query) (*MetricsResponse, error) {
 	queryString, err := query.ToQueryString()
 	if err != nil {
@@ -356,6 +480,30 @@ func (c *Client) Get(ctx context.Context, query *Query) (*MetricsResponse, error
 
 	if rsp.IsError() {
 		return nil, fmt.Errorf("get metrics failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
+	}
+
+	return &response, nil
+}
+
+// GetV2 runs a metrics query against the v2 Langfuse public metrics API.
+func (c *Client) GetV2(ctx context.Context, query *V2Query) (*MetricsResponse, error) {
+	queryString, err := query.ToQueryString()
+	if err != nil {
+		return nil, err
+	}
+
+	var response MetricsResponse
+	rsp, err := c.restyCli.R().
+		SetContext(ctx).
+		SetResult(&response).
+		SetQueryString(queryString).
+		Get("/v2/metrics")
+	if err != nil {
+		return nil, err
+	}
+
+	if rsp.IsError() {
+		return nil, fmt.Errorf("get v2 metrics failed: %s, got status code: %d", rsp.String(), rsp.StatusCode())
 	}
 
 	return &response, nil

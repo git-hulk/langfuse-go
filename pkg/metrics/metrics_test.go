@@ -234,6 +234,82 @@ func TestQuery_ToQueryStringMarshalError(t *testing.T) {
 	require.Contains(t, err.Error(), "marshal query failed")
 }
 
+func TestV2Query_ToQueryString(t *testing.T) {
+	query := &V2Query{
+		View: ViewObservations,
+		Metrics: []Metric{
+			{Measure: MeasureStreamingLatency, Aggregation: "p95"},
+			{Measure: MeasureInputCost, Aggregation: "sum"},
+		},
+		Filters:       []Filter{{Column: "isRootObservation", Operator: "=", Value: true, Type: "boolean"}},
+		FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
+		ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
+		Config:        &QueryConfig{RowLimit: 1000},
+	}
+
+	queryString, err := query.ToQueryString()
+	require.NoError(t, err)
+
+	values, err := url.ParseQuery(queryString)
+	require.NoError(t, err)
+
+	var decoded V2Query
+	err = json.Unmarshal([]byte(values.Get("query")), &decoded)
+	require.NoError(t, err)
+	require.Equal(t, query, &decoded)
+}
+
+func TestV2Query_ToQueryStringValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   *V2Query
+		wantErr string
+	}{
+		{
+			name: "traces view is not supported",
+			query: &V2Query{
+				View:          ViewTraces,
+				Metrics:       []Metric{{Measure: MeasureCount, Aggregation: "count"}},
+				FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
+				ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
+			},
+			wantErr: "invalid 'view': traces",
+		},
+		{
+			name: "boolean scores support value",
+			query: &V2Query{
+				View:          ViewScoresBoolean,
+				Metrics:       []Metric{{Measure: MeasureValue, Aggregation: "avg"}},
+				FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
+				ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
+			},
+		},
+		{
+			name: "scores categorical rejects value",
+			query: &V2Query{
+				View:          ViewScoresCategorical,
+				Metrics:       []Metric{{Measure: MeasureValue, Aggregation: "avg"}},
+				FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
+				ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
+			},
+			wantErr: `invalid 'metrics[0].measure' "value" for view "scores-categorical"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.query.ToQueryString()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
 func TestRawRowHelpers(t *testing.T) {
 	row := RawRow{
 		"name":        json.RawMessage(`"assistant"`),
@@ -427,6 +503,58 @@ func TestClient_Get(t *testing.T) {
 		require.Equal(t, "1234", rows[0].InputTokensSum)
 		require.Equal(t, "567", rows[0].OutputTokensSum)
 		require.Equal(t, "8", rows[0].CountCount)
+	})
+}
+
+func TestClient_GetV2(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("successful v2 metrics request", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, "/v2/metrics", r.URL.Path)
+			require.Equal(t, "GET", r.Method)
+
+			var query V2Query
+			err := json.Unmarshal([]byte(r.URL.Query().Get("query")), &query)
+			require.NoError(t, err)
+			require.Equal(t, ViewObservations, query.View)
+			require.Equal(t, MeasureOutputTokensPerSecond, query.Metrics[0].Measure)
+
+			w.Header().Set("Content-Type", "application/json")
+			_, err = w.Write([]byte(`{"data":[{"providedModelName":"gpt-4.1","sum_totalCost":0.42}]}`))
+			require.NoError(t, err)
+		}))
+		defer server.Close()
+
+		client := NewClient(resty.New().SetBaseURL(server.URL))
+		response, err := client.GetV2(ctx, &V2Query{
+			View:          ViewObservations,
+			Metrics:       []Metric{{Measure: MeasureOutputTokensPerSecond, Aggregation: "avg"}},
+			FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
+			ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
+		})
+		require.NoError(t, err)
+		require.Len(t, response.Data, 1)
+		require.JSONEq(t, `0.42`, string(response.Data[0]["sum_totalCost"]))
+	})
+
+	t.Run("validation error does not send request", func(t *testing.T) {
+		called := false
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			called = true
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		client := NewClient(resty.New().SetBaseURL(server.URL))
+		_, err := client.GetV2(ctx, &V2Query{
+			View:          ViewTraces,
+			Metrics:       []Metric{{Measure: MeasureCount, Aggregation: "count"}},
+			FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
+			ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
+		})
+		require.Error(t, err)
+		require.False(t, called)
 	})
 }
 
