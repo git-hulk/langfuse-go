@@ -120,14 +120,14 @@ func TestQuery_ToQueryStringValidationErrors(t *testing.T) {
 			wantErr: "'config.bins' must be between 1 and 100",
 		},
 		{
-			name: "invalid measure for view",
+			name: "missing measure",
 			query: &Query{
 				View:          ViewScoresCategorical,
-				Metrics:       []Metric{{Measure: MeasureValue, Aggregation: "avg"}},
+				Metrics:       []Metric{{Measure: "", Aggregation: "avg"}},
 				FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
 				ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
 			},
-			wantErr: `invalid 'metrics[0].measure' "value" for view "scores-categorical"`,
+			wantErr: "'metrics[0].measure' is required",
 		},
 	}
 
@@ -140,11 +140,10 @@ func TestQuery_ToQueryStringValidationErrors(t *testing.T) {
 	}
 }
 
-func TestQuery_ToQueryStringViewSpecificMeasures(t *testing.T) {
+func TestQuery_ToQueryStringMeasures(t *testing.T) {
 	tests := []struct {
-		name    string
-		query   *Query
-		wantErr string
+		name  string
+		query *Query
 	}{
 		{
 			name: "boolean scores support count",
@@ -195,27 +194,20 @@ func TestQuery_ToQueryStringViewSpecificMeasures(t *testing.T) {
 			},
 		},
 		{
-			name: "scores categorical rejects latency",
+			name: "scores categorical latency is left to server",
 			query: &Query{
 				View:          ViewScoresCategorical,
 				Metrics:       []Metric{{Measure: MeasureLatency, Aggregation: "avg"}},
 				FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
 				ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
 			},
-			wantErr: `invalid 'metrics[0].measure' "latency" for view "scores-categorical"`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := tt.query.ToQueryString()
-			if tt.wantErr == "" {
-				require.NoError(t, err)
-				return
-			}
-
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tt.wantErr)
+			require.NoError(t, err)
 		})
 	}
 }
@@ -259,21 +251,19 @@ func TestV2Query_ToQueryString(t *testing.T) {
 	require.Equal(t, query, &decoded)
 }
 
-func TestV2Query_ToQueryStringValidation(t *testing.T) {
+func TestV2Query_ToQueryStringViewsAndMeasures(t *testing.T) {
 	tests := []struct {
-		name    string
-		query   *V2Query
-		wantErr string
+		name  string
+		query *V2Query
 	}{
 		{
-			name: "traces view is not supported",
+			name: "traces view is left to server",
 			query: &V2Query{
 				View:          ViewTraces,
 				Metrics:       []Metric{{Measure: MeasureCount, Aggregation: "count"}},
 				FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
 				ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
 			},
-			wantErr: "invalid 'view': traces",
 		},
 		{
 			name: "boolean scores support value",
@@ -285,27 +275,20 @@ func TestV2Query_ToQueryStringValidation(t *testing.T) {
 			},
 		},
 		{
-			name: "scores categorical rejects value",
+			name: "scores categorical value is left to server",
 			query: &V2Query{
 				View:          ViewScoresCategorical,
 				Metrics:       []Metric{{Measure: MeasureValue, Aggregation: "avg"}},
 				FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
 				ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),
 			},
-			wantErr: `invalid 'metrics[0].measure' "value" for view "scores-categorical"`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := tt.query.ToQueryString()
-			if tt.wantErr == "" {
-				require.NoError(t, err)
-				return
-			}
-
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tt.wantErr)
+			require.NoError(t, err)
 		})
 	}
 }
@@ -548,7 +531,6 @@ func TestClient_GetV2(t *testing.T) {
 
 		client := NewClient(resty.New().SetBaseURL(server.URL))
 		_, err := client.GetV2(ctx, &V2Query{
-			View:          ViewTraces,
 			Metrics:       []Metric{{Measure: MeasureCount, Aggregation: "count"}},
 			FromTimestamp: mustParseTime("2024-01-01T00:00:00Z"),
 			ToTimestamp:   mustParseTime("2024-01-02T00:00:00Z"),

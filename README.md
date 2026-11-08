@@ -148,6 +148,8 @@ func main() {
 
 `GetV2` is the recommended Metrics API for Langfuse deployments that expose the v4 preview read path or v4. It does not support the legacy `traces` view; use `observations` instead. `Get` and `Query` remain available for the legacy `/api/public/metrics` endpoint.
 
+Both endpoints validate required fields, time ranges, and existing query option constraints locally. Supported views, measures, and their combinations are validated by the server. The view and measure constants are conveniences, not allowlists; you can pass new server-supported values without updating the SDK. Unsupported combinations now return a server error rather than a local validation error.
+
 ### Comments
 
 ```go
