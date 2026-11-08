@@ -18,15 +18,15 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{matrix.go-version}}
-
       - name: Checkout Code Base
         uses: actions/checkout@v4
         with:
           fetch-depth: '0'
+
+      - name: Install Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{matrix.go-version}}
 
       - name: Restore Go Module Cache
         uses: actions/cache@v4
