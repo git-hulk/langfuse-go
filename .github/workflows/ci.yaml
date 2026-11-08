@@ -40,6 +40,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6.5.1
         with:
           version: v1.64.7
+          install-mode: goinstall
           verify: false
           only-new-issues: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
