@@ -63,7 +63,7 @@ goimports -w -local github.com/git-hulk/langfuse-go ./...
 ### Build & Linting
 ```bash
 go build ./...              # Build all packages
-golangci-lint run           # Lint (CI uses v1.64.7)
+golangci-lint run           # Lint (CI uses v2.8.0)
 ```
 
 ## API Naming Conventions
